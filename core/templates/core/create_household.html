@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Créer un foyer</title>
+  </head>
+
+  <body>
+    <h1>Créer un nouveau foyer</h1>
+
+    <form method="post">
+      {% csrf_token %}
+
+      <p>
+        <label for="id_name">Nom du foyer :</label><br />
+        <input type="text" name="name" id="id_name" required />
+      </p>
+
+      <button type="submit">Créer</button>
+    </form>
+
+    <p>
+      <a href="{% url 'my_households' %}">⬅ Retour à mes foyers</a>
+    </p>
+  </body>
+</html>

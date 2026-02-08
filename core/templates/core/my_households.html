@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Mes foyers</title>
+  </head>
+
+  <body>
+    <h1>Mes foyers</h1>
+
+    <p>
+      <a href="{% url 'create_household' %}">Créer un nouveau foyer</a>
+    </p>
+
+    <ul>
+      {% for m in memberships %}
+        <li>{{ m.household.name }} — {{ m.get_role_display }}</li>
+      {% empty %}
+        <li>Aucun foyer pour l'instant.</li>
+      {% endfor %}
+    </ul>
+  </body>
+</html>
