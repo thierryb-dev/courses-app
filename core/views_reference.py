@@ -1,4 +1,4 @@
-from django.contrib.auth.decorators import login_required
+﻿from django.contrib.auth.decorators import login_required
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 
@@ -67,13 +67,14 @@ def generate_shopping_list_from_reference(request, household_id: int):
     if request.method == "POST":
         list_name = (request.POST.get("list_name") or "").strip() or "Courses"
         selected_ids = request.POST.getlist("ref_item")
-
-        shopping_list = ShoppingList.objects.create(
+        shopping_list, created = ShoppingList.objects.get_or_create(
             household=household,
             name=list_name,
-            created_by=request.user,
+            defaults={"created_by": request.user},
         )
 
+        # Régénération : évite doublons
+        shopping_list.items.all().delete()
         selected = ref_items.filter(id__in=selected_ids)
         bulk = []
         for r in selected:
@@ -101,3 +102,6 @@ def generate_shopping_list_from_reference(request, household_id: int):
             "ref_items": ref_items,
         },
     )
+
+
+
