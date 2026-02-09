@@ -2,83 +2,147 @@
 {% block title %}{{ shopping_list.name }}{% endblock %}
 
 {% block content %}
-  <h1>{{ shopping_list.name }} — {{ shopping_list.household.name }}</h1>
+  <!-- Header -->
+  <div class="d-flex flex-wrap align-items-start justify-content-between gap-2 mb-3">
+    <div>
+      <div class="small text-secondary mb-1">
+        <a class="link-secondary text-decoration-none"
+           href="{% url 'shopping_lists' %}?household={{ shopping_list.household.id }}">← Retour aux listes</a>
+        <span class="mx-2">•</span>
+        <a class="link-secondary text-decoration-none"
+           href="{% url 'reference_list' shopping_list.household.id %}">Catalogue</a>
+      </div>
+      <h1 class="h3 mb-1">{{ shopping_list.name }}</h1>
+      <div class="text-secondary small">{{ shopping_list.household.name }}</div>
+    </div>
 
-  <p>
-    <a href="{% url 'shopping_lists' %}?household={{ shopping_list.household.id }}">← Retour aux listes</a>
-    <span class="muted">|</span>
-    <a href="{% url 'reference_list' shopping_list.household.id %}">Catalogue</a>
-  </p>
+    <div class="d-flex flex-wrap gap-2">
+      <form method="post" action="{% url 'clear_checked_items' shopping_list.id %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-outline-danger btn-sm">
+          Vider les cochés
+        </button>
+      </form>
+    </div>
+  </div>
 
-  <div class="card">
-    <h3>Ajouter un article (manuel)</h3>
-    <form method="post" action="{% url 'add_list_item' shopping_list.id %}">
-      {% csrf_token %}
-      <div class="row">
-        <div>
-          <label>Article</label><br />
-          <input name="name" placeholder="ex: Lait" required />
-        </div>
-        <div>
-          <label>Rayon</label><br />
-          <select name="aisle">
-            {% for val, label in aisle_choices %}
-              <option value="{{ val }}">{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div>
-          <label>Quantité</label><br />
-          <input name="quantity" placeholder="ex: 2, 500g" />
-        </div>
-        <div>
-          <label>Note</label><br />
-          <input name="note" placeholder="optionnel" />
-        </div>
-        <div>
-          <button type="submit">Ajouter</button>
+  <div class="row g-3">
+    <!-- Ajouter un article -->
+    <div class="col-12">
+      <div class="card app-card">
+        <div class="card-body">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h2 class="h6 mb-0">Ajouter un article</h2>
+            <span class="badge rounded-pill badge-soft">Manuel</span>
+          </div>
+
+          <form method="post" action="{% url 'add_list_item' shopping_list.id %}">
+            {% csrf_token %}
+
+            <div class="row g-2 align-items-end">
+              <div class="col-12 col-md-4">
+                <label class="form-label">Article</label>
+                <input class="form-control" name="name" placeholder="ex: Lait" required />
+              </div>
+
+              <div class="col-12 col-md-3">
+                <label class="form-label">Rayon</label>
+                <select class="form-select" name="aisle">
+                  {% for val, label in aisle_choices %}
+                    <option value="{{ val }}">{{ label }}</option>
+                  {% endfor %}
+                </select>
+              </div>
+
+              <div class="col-12 col-md-2">
+                <label class="form-label">Quantité</label>
+                <input class="form-control" name="quantity" placeholder="ex: 2, 500g" />
+              </div>
+
+              <div class="col-12 col-md-3">
+                <label class="form-label">Note</label>
+                <input class="form-control" name="note" placeholder="optionnel" />
+              </div>
+
+              <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                  Ajouter
+                </button>
+              </div>
+            </div>
+          </form>
+
         </div>
       </div>
-    </form>
-  </div>
+    </div>
 
-  <div class="card">
-    <form method="post" action="{% url 'clear_checked_items' shopping_list.id %}">
-      {% csrf_token %}
-      <button type="submit">Vider les articles cochés</button>
-    </form>
-  </div>
+    <!-- Articles -->
+    <div class="col-12">
+      <div class="card app-card">
+        <div class="card-body">
+          <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+            <h2 class="h6 mb-0">Articles</h2>
+            <span class="text-secondary small">Triés par rayon</span>
+          </div>
 
-  <div class="card">
-    <h3>Articles (triés par rayon)</h3>
+          {% regroup items by get_aisle_display as groups %}
 
-    {% regroup items by get_aisle_display as groups %}
+          {% for g in groups %}
+            <div class="mb-3">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <h3 class="h6 mb-0">{{ g.grouper }}</h3>
+                <span class="badge text-bg-light border">{{ g.list|length }}</span>
+              </div>
 
-    {% for g in groups %}
-      <h4>{{ g.grouper }}</h4>
-      <ul>
-        {% for item in g.list %}
-          <li>
-            <form style="display:inline" method="post" action="{% url 'toggle_list_item' item.id %}">
-              {% csrf_token %}
-              <button type="submit">{% if item.is_checked %}☑{% else %}☐{% endif %}</button>
-            </form>
+              <div class="list-group">
+                {% for item in g.list %}
+                  <div class="list-group-item d-flex flex-wrap align-items-center justify-content-between gap-2">
+                    <div class="d-flex align-items-start gap-2">
+                      <!-- Toggle -->
+                      <form method="post" action="{% url 'toggle_list_item' item.id %}">
+                        {% csrf_token %}
+                        <button type="submit"
+                                class="btn btn-sm {% if item.is_checked %}btn-success{% else %}btn-outline-secondary{% endif %}"
+                                title="Cocher / décocher">
+                          {% if item.is_checked %}✓{% else %}◻{% endif %}
+                        </button>
+                      </form>
 
-            {% if item.is_checked %}<s>{% endif %}
-              <strong>{{ item.name }}</strong>
-              {% if item.quantity %} — {{ item.quantity }}{% endif %}
-              {% if item.note %} <span class="muted">({{ item.note }})</span>{% endif %}
-            {% if item.is_checked %}</s>{% endif %}
+                      <!-- Texte -->
+                      <div>
+                        <div class="fw-semibold {% if item.is_checked %}text-decoration-line-through text-secondary{% endif %}">
+                          {{ item.name }}
+                        </div>
 
-            <form style="display:inline" method="post" action="{% url 'delete_list_item' item.id %}">
-              {% csrf_token %}
-              <button type="submit">Supprimer</button>
-            </form>
-          </li>
-        {% endfor %}
-      </ul>
-    {% empty %}
-      <p>Rien dans cette liste.</p>
-    {% endfor %}
+                        <div class="small text-secondary">
+                          {% if item.quantity %}
+                            <span class="badge text-bg-light border me-1">{{ item.quantity }}</span>
+                          {% endif %}
+                          {% if item.note %}
+                            <span class="text-secondary">({{ item.note }})</span>
+                          {% endif %}
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="d-flex gap-2">
+                      <form method="post" action="{% url 'delete_list_item' item.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm btn-outline-danger">
+                          Supprimer
+                        </button>
+                      </form>
+                    </div>
+                  </div>
+                {% endfor %}
+              </div>
+            </div>
+          {% empty %}
+            <div class="text-secondary">Rien dans cette liste.</div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
   </div>
 {% endblock %}
