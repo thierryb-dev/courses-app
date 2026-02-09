@@ -1,24 +1,29 @@
-<!doctype html>
-<html lang="fr">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Mes foyers</title>
-  </head>
+{% extends "core/base.html" %}
+{% block title %}Mes foyers{% endblock %}
 
-  <body>
-    <h1>Mes foyers</h1>
+{% block content %}
+  <h1>Mes foyers</h1>
 
-    <p>
-      <a href="{% url 'create_household' %}">Créer un nouveau foyer</a>
-    </p>
+  <p>
+    <a href="{% url 'create_household' %}">Créer un nouveau foyer</a>
+  </p>
 
+  <div class="card">
     <ul>
       {% for m in memberships %}
-        <li>{{ m.household.name }} — {{ m.get_role_display }}</li>
+        <li>
+          <strong>{{ m.household.name }}</strong>
+          — {{ m.get_role_display }}
+          <span class="muted">|</span>
+          <a href="{% url 'reference_list' m.household.id %}">Catalogue</a>
+          <span class="muted">|</span>
+          <a href="{% url 'generate_from_reference' m.household.id %}">Générer une liste</a>
+          <span class="muted">|</span>
+          <a href="{% url 'shopping_lists' %}?household={{ m.household.id }}">Voir les listes</a>
+        </li>
       {% empty %}
         <li>Aucun foyer pour l'instant.</li>
       {% endfor %}
     </ul>
-  </body>
-</html>
+  </div>
+{% endblock %}

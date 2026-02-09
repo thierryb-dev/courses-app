@@ -1,0 +1,68 @@
+{% extends "core/base.html" %}
+{% block title %}Catalogue{% endblock %}
+
+{% block content %}
+  <h1>Catalogue — {{ household.name }}</h1>
+
+  <p class="muted">
+    Ici tu maintiens la liste de référence (rayons + quantités par défaut).
+  </p>
+
+  <div class="card">
+    <h3>Ajouter un produit</h3>
+    <form method="post">
+      {% csrf_token %}
+      <div class="row">
+        <div>
+          <label>Produit</label><br />
+          <input name="name" required placeholder="ex: Lait" />
+        </div>
+        <div>
+          <label>Rayon</label><br />
+          <select name="aisle">
+            {% for val, label in aisle_choices %}
+              <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Quantité</label><br />
+          <input name="default_quantity" placeholder="ex: 2, 500g" />
+        </div>
+        <div>
+          <label>Note</label><br />
+          <input name="default_note" placeholder="optionnel" />
+        </div>
+        <div>
+          <button type="submit">Ajouter</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Produits du catalogue</h3>
+    <ul>
+      {% for it in items %}
+        <li>
+          <strong>{{ it.name }}</strong>
+          <span class="badge">{{ it.get_aisle_display }}</span>
+          {% if it.default_quantity %} — {{ it.default_quantity }}{% endif %}
+          {% if it.default_note %} <span class="muted">({{ it.default_note }})</span>{% endif %}
+          {% if not it.is_active %} <span class="badge danger">désactivé</span>{% endif %}
+
+          <form style="display:inline" method="post" action="{% url 'reference_toggle_active' it.id %}">
+            {% csrf_token %}
+            <button type="submit">{% if it.is_active %}Désactiver{% else %}Réactiver{% endif %}</button>
+          </form>
+        </li>
+      {% empty %}
+        <li>Catalogue vide.</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <p>
+    <a href="{% url 'generate_from_reference' household.id %}">→ Générer une liste de courses</a>
+  </p>
+{% endblock %}

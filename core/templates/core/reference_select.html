@@ -1,0 +1,39 @@
+{% extends "core/base.html" %}
+{% block title %}Générer une liste{% endblock %}
+
+{% block content %}
+  <h1>Générer une liste — {{ household.name }}</h1>
+
+  <div class="card">
+    <form method="post">
+      {% csrf_token %}
+
+      <label>Nom de la liste</label><br />
+      <input name="list_name" placeholder="ex: Courses semaine" />
+
+      <hr />
+
+      <p class="muted">Coche les produits à acheter cette fois.</p>
+
+      <ul>
+        {% for r in ref_items %}
+          <li>
+            <label>
+              <input type="checkbox" name="ref_item" value="{{ r.id }}">
+              <strong>{{ r.name }}</strong>
+              <span class="badge">{{ r.get_aisle_display }}</span>
+              {% if r.default_quantity %} — {{ r.default_quantity }}{% endif %}
+              {% if r.default_note %} <span class="muted">({{ r.default_note }})</span>{% endif %}
+            </label>
+          </li>
+        {% empty %}
+          <li>Catalogue vide.</li>
+        {% endfor %}
+      </ul>
+
+      <button type="submit">Créer la liste</button>
+    </form>
+  </div>
+
+  <p><a href="{% url 'reference_list' household.id %}">← Retour au catalogue</a></p>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "core/base.html" %}
+{% block title %}Nouvelle liste{% endblock %}
+
+{% block content %}
+  <h1>Nouvelle liste — {{ household.name }}</h1>
+
+  <div class="card">
+    <form method="post">
+      {% csrf_token %}
+      <label>Nom</label><br />
+      <input name="name" required placeholder="ex: Courses semaine" />
+      <br />
+      <button type="submit">Créer</button>
+    </form>
+  </div>
+
+  <p><a href="{% url 'shopping_lists' %}?household={{ household.id }}">← Retour</a></p>
+{% endblock %}

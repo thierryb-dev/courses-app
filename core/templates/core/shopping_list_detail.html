@@ -1,0 +1,84 @@
+{% extends "core/base.html" %}
+{% block title %}{{ shopping_list.name }}{% endblock %}
+
+{% block content %}
+  <h1>{{ shopping_list.name }} — {{ shopping_list.household.name }}</h1>
+
+  <p>
+    <a href="{% url 'shopping_lists' %}?household={{ shopping_list.household.id }}">← Retour aux listes</a>
+    <span class="muted">|</span>
+    <a href="{% url 'reference_list' shopping_list.household.id %}">Catalogue</a>
+  </p>
+
+  <div class="card">
+    <h3>Ajouter un article (manuel)</h3>
+    <form method="post" action="{% url 'add_list_item' shopping_list.id %}">
+      {% csrf_token %}
+      <div class="row">
+        <div>
+          <label>Article</label><br />
+          <input name="name" placeholder="ex: Lait" required />
+        </div>
+        <div>
+          <label>Rayon</label><br />
+          <select name="aisle">
+            {% for val, label in aisle_choices %}
+              <option value="{{ val }}">{{ label }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label>Quantité</label><br />
+          <input name="quantity" placeholder="ex: 2, 500g" />
+        </div>
+        <div>
+          <label>Note</label><br />
+          <input name="note" placeholder="optionnel" />
+        </div>
+        <div>
+          <button type="submit">Ajouter</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <form method="post" action="{% url 'clear_checked_items' shopping_list.id %}">
+      {% csrf_token %}
+      <button type="submit">Vider les articles cochés</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Articles (triés par rayon)</h3>
+
+    {% regroup items by get_aisle_display as groups %}
+
+    {% for g in groups %}
+      <h4>{{ g.grouper }}</h4>
+      <ul>
+        {% for item in g.list %}
+          <li>
+            <form style="display:inline" method="post" action="{% url 'toggle_list_item' item.id %}">
+              {% csrf_token %}
+              <button type="submit">{% if item.is_checked %}☑{% else %}☐{% endif %}</button>
+            </form>
+
+            {% if item.is_checked %}<s>{% endif %}
+              <strong>{{ item.name }}</strong>
+              {% if item.quantity %} — {{ item.quantity }}{% endif %}
+              {% if item.note %} <span class="muted">({{ item.note }})</span>{% endif %}
+            {% if item.is_checked %}</s>{% endif %}
+
+            <form style="display:inline" method="post" action="{% url 'delete_list_item' item.id %}">
+              {% csrf_token %}
+              <button type="submit">Supprimer</button>
+            </form>
+          </li>
+        {% endfor %}
+      </ul>
+    {% empty %}
+      <p>Rien dans cette liste.</p>
+    {% endfor %}
+  </div>
+{% endblock %}

@@ -1,0 +1,53 @@
+{% extends "core/base.html" %}
+{% block title %}Listes de courses{% endblock %}
+
+{% block content %}
+  <h1>Listes de courses</h1>
+
+  <div class="card">
+    <form method="get">
+      <label>Filtrer par foyer :</label><br />
+      <select name="household" onchange="this.form.submit()">
+        <option value="">-- Tous --</option>
+        {% for h in households %}
+          <option value="{{ h.id }}" {% if selected_household and selected_household.id == h.id %}selected{% endif %}>
+            {{ h.name }}
+          </option>
+        {% endfor %}
+      </select>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Actions rapides</h3>
+    <ul>
+      {% for h in households %}
+        <li>
+          <strong>{{ h.name }}</strong>
+          <span class="muted">|</span>
+          <a href="{% url 'generate_from_reference' h.id %}">Générer depuis le catalogue</a>
+          <span class="muted">|</span>
+          <a href="{% url 'create_shopping_list' h.id %}">Créer une liste manuellement</a>
+          <span class="muted">|</span>
+          <a href="{% url 'reference_list' h.id %}">Catalogue</a>
+        </li>
+      {% empty %}
+        <li>Tu dois d’abord appartenir à un foyer.</li>
+      {% endfor %}
+    </ul>
+  </div>
+
+  <div class="card">
+    <h3>Mes listes</h3>
+    <ul>
+      {% for sl in shopping_lists %}
+        <li>
+          <a href="{% url 'shopping_list_detail' sl.id %}"><strong>{{ sl.name }}</strong></a>
+          <span class="muted">— {{ sl.household.name }}</span>
+        </li>
+      {% empty %}
+        <li>Aucune liste de courses.</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endblock %}
