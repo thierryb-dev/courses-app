@@ -1,0 +1,75 @@
+{% extends "core/base.html" %}
+{% block title %}Historique des tickets{% endblock %}
+
+{% block content %}
+  <div class="row" style="justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;">
+    <div>
+      <h1>Historique des tickets</h1>
+      <div class="muted">Tous les tickets enregistrés (tous foyers où tu es membre) avec contrôle total vs lignes.</div>
+    </div>
+  </div>
+
+  <div class="card">
+    {% if receipts %}
+      <ul class="list">
+        {% for r in receipts %}
+          <li>
+            <div class="row" style="justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;">
+
+              <div style="min-width:320px; flex:1;">
+                <div style="font-weight:800;">
+                  {{ r.purchased_at|date:"d/m/Y H:i" }}
+                  {% if r.store_name %} — {{ r.store_name }}{% endif %}
+                </div>
+
+                <div class="muted" style="margin-top:4px;">
+                  Foyer : {{ r.household.name }} • Lignes : {{ r.lines_count }}
+                </div>
+              </div>
+
+              <div style="min-width:360px; flex:0;">
+                <div class="row" style="gap:10px; flex-wrap:wrap; justify-content:flex-end; align-items:center;">
+
+                  <div class="pill">
+                    Caisse :
+                    {% if r.paper_total is None %}
+                      <strong>—</strong>
+                    {% else %}
+                      <strong>{{ r.paper_total|floatformat:2 }} €</strong>
+                    {% endif %}
+                  </div>
+
+                  <div class="pill">
+                    Calculé :
+                    <strong>{{ r.actual_total_ui|floatformat:2 }} €</strong>
+                  </div>
+
+                  {% if r.paper_total is not None %}
+                    <div class="pill">
+                      Écart :
+                      <strong>{{ r.delta_ui|floatformat:2 }} €</strong>
+                    </div>
+
+                    {% if r.ok_ui %}
+                      <div class="pill" title="OK (écart ≤ {{ tolerance }} €)">✅ OK</div>
+                    {% else %}
+                      <div class="pill" title="KO (écart > {{ tolerance }} €)">❌ KO</div>
+                    {% endif %}
+                  {% else %}
+                    <div class="pill" title="Total caisse non saisi">⚠️ Total manquant</div>
+                  {% endif %}
+
+                  <a class="btn-primary" href="{% url 'receipt_detail' r.id %}">Voir détail</a>
+                  <a class="btn-secondary" href="{% url 'shopping_list_detail' r.shopping_list.id %}">Voir liste</a>
+                </div>
+              </div>
+
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="muted">Aucun ticket enregistré pour le moment.</div>
+    {% endif %}
+  </div>
+{% endblock %}

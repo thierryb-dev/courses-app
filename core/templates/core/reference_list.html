@@ -1,68 +1,82 @@
 {% extends "core/base.html" %}
-{% block title %}Catalogue{% endblock %}
+{% block title %}Catalogue — {{ household.name }}{% endblock %}
 
 {% block content %}
-  <h1>Catalogue — {{ household.name }}</h1>
-
-  <p class="muted">
-    Ici tu maintiens la liste de référence (rayons + quantités par défaut).
-  </p>
+  <div class="row" style="justify-content:space-between;">
+    <div>
+      <h1>Catalogue</h1>
+      <div class="muted">{{ household.name }} — Sélectionne puis génère la liste magasin.</div>
+    </div>
+    <div class="kpi">
+      <div class="pill"><strong>{{ selected_count }}</strong> sélectionné(s)</div>
+      <form method="post" action="{% url 'generate_shopping_list_from_reference' household.id %}">
+        {% csrf_token %}
+        <button class="btn-primary" type="submit" {% if selected_count == 0 %}disabled{% endif %}>
+          Générer la liste
+        </button>
+      </form>
+    </div>
+  </div>
 
   <div class="card">
-    <h3>Ajouter un produit</h3>
+    <h2>Ajouter un produit</h2>
     <form method="post">
       {% csrf_token %}
       <div class="row">
-        <div>
-          <label>Produit</label><br />
-          <input name="name" required placeholder="ex: Lait" />
-        </div>
-        <div>
-          <label>Rayon</label><br />
-          <select name="aisle">
-            {% for val, label in aisle_choices %}
-              <option value="{{ val }}">{{ label }}</option>
-            {% endfor %}
-          </select>
-        </div>
-        <div>
-          <label>Quantité</label><br />
-          <input name="default_quantity" placeholder="ex: 2, 500g" />
-        </div>
-        <div>
-          <label>Note</label><br />
-          <input name="default_note" placeholder="optionnel" />
-        </div>
-        <div>
-          <button type="submit">Ajouter</button>
-        </div>
+        <input name="name" placeholder="Produit (ex : Pâtes)" required style="flex:1; min-width:220px;">
+        <select name="aisle">
+          {% for k, label in aisle_choices %}
+            <option value="{{ k }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+        <input name="default_quantity" placeholder="Qté (ex : 2)" style="width:160px;">
+        <input name="default_note" placeholder="Note (ex : sans gluten)" style="flex:1; min-width:200px;">
+        <button class="btn-primary" type="submit">Ajouter</button>
       </div>
     </form>
   </div>
 
   <div class="card">
-    <h3>Produits du catalogue</h3>
-    <ul>
+    <div class="row" style="justify-content:space-between;">
+      <h2>Produits</h2>
+
+      <form method="post" action="{% url 'reference_clear_selected' household.id %}">
+        {% csrf_token %}
+        <button type="submit">Vider sélection</button>
+      </form>
+    </div>
+
+    <ul class="list">
       {% for it in items %}
         <li>
-          <strong>{{ it.name }}</strong>
-          <span class="badge">{{ it.get_aisle_display }}</span>
-          {% if it.default_quantity %} — {{ it.default_quantity }}{% endif %}
-          {% if it.default_note %} <span class="muted">({{ it.default_note }})</span>{% endif %}
-          {% if not it.is_active %} <span class="badge danger">désactivé</span>{% endif %}
+          <div class="row" style="justify-content:space-between;">
+            <div>
+              <div style="font-weight:800;">{{ it.name }}</div>
+              <div class="muted">{{ it.get_aisle_display }}{% if it.default_quantity %} • {{ it.default_quantity }}{% endif %}{% if it.default_note %} • {{ it.default_note }}{% endif %}</div>
+            </div>
 
-          <form style="display:inline" method="post" action="{% url 'reference_toggle_active' it.id %}">
-            {% csrf_token %}
-            <button type="submit">{% if it.is_active %}Désactiver{% else %}Réactiver{% endif %}</button>
-          </form>
+            <div class="row">
+              <form method="post" action="{% url 'reference_toggle_selected' it.id %}">
+                {% csrf_token %}
+                <button type="submit" {% if not it.is_active %}disabled{% endif %}>
+                  {% if it.is_selected %}✓ Sélectionné{% else %}+ Sélectionner{% endif %}
+                </button>
+              </form>
+
+              <form method="post" action="{% url 'reference_toggle_active' it.id %}">
+                {% csrf_token %}
+                {% if it.is_active %}
+                  <button class="btn-danger" type="submit">Désactiver</button>
+                {% else %}
+                  <button type="submit">Activer</button>
+                {% endif %}
+              </form>
+            </div>
+          </div>
         </li>
       {% empty %}
-        <li>Catalogue vide.</li>
+        <li class="muted">Aucun produit dans le catalogue.</li>
       {% endfor %}
     </ul>
   </div>
-
-  <p>
-    <a href="{% url 'generate_from_reference' household.id %}">→ Générer une liste de courses</a>
-  </p>
 {% endblock %}

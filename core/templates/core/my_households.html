@@ -2,27 +2,37 @@
 {% block title %}Mes foyers{% endblock %}
 
 {% block content %}
-  <h1>Mes foyers</h1>
-
-  <p>
-    <a href="{% url 'create_household' %}">Créer un nouveau foyer</a>
-  </p>
+  <div class="row" style="justify-content:space-between;">
+    <div>
+      <h1>Mes foyers</h1>
+      <div class="muted">Sélectionne un foyer pour gérer le catalogue et générer la liste magasin.</div>
+    </div>
+    <div class="row">
+      <a class="badge" href="{% url 'create_household' %}">+ Créer un foyer</a>
+    </div>
+  </div>
 
   <div class="card">
-    <ul>
+    <ul class="list">
       {% for m in memberships %}
         <li>
-          <strong>{{ m.household.name }}</strong>
-          — {{ m.get_role_display }}
-          <span class="muted">|</span>
-          <a href="{% url 'reference_list' m.household.id %}">Catalogue</a>
-          <span class="muted">|</span>
-          <a href="{% url 'generate_from_reference' m.household.id %}">Générer une liste</a>
-          <span class="muted">|</span>
-          <a href="{% url 'shopping_lists' %}?household={{ m.household.id }}">Voir les listes</a>
+          <div class="row" style="justify-content:space-between;">
+            <div>
+              <div style="font-weight:800;">{{ m.household.name }}</div>
+              <div class="muted">Rôle : {{ m.get_role_display }}</div>
+            </div>
+            <div class="row">
+              <a class="badge" href="{% url 'reference_list' m.household.id %}">Catalogue</a>
+
+              <form method="post" action="{% url 'generate_shopping_list_from_reference' m.household.id %}">
+                {% csrf_token %}
+                <button class="btn-primary" type="submit">Générer la liste</button>
+              </form>
+            </div>
+          </div>
         </li>
       {% empty %}
-        <li>Aucun foyer pour l'instant.</li>
+        <li class="muted">Aucun foyer pour le moment.</li>
       {% endfor %}
     </ul>
   </div>

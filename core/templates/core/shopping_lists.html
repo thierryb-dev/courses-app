@@ -1,52 +1,27 @@
 {% extends "core/base.html" %}
-{% block title %}Listes de courses{% endblock %}
+{% block title %}Listes{% endblock %}
 
 {% block content %}
-  <h1>Listes de courses</h1>
+  <h1>Listes magasin</h1>
+  <div class="muted">Une liste unique par foyer.</div>
 
   <div class="card">
-    <form method="get">
-      <label>Filtrer par foyer :</label><br />
-      <select name="household" onchange="this.form.submit()">
-        <option value="">-- Tous --</option>
-        {% for h in households %}
-          <option value="{{ h.id }}" {% if selected_household and selected_household.id == h.id %}selected{% endif %}>
-            {{ h.name }}
-          </option>
-        {% endfor %}
-      </select>
-    </form>
-  </div>
-
-  <div class="card">
-    <h3>Actions rapides</h3>
-    <ul>
-      {% for h in households %}
+    <ul class="list">
+      {% for sl in lists %}
         <li>
-          <strong>{{ h.name }}</strong>
-          <span class="muted">|</span>
-          <a href="{% url 'generate_from_reference' h.id %}">Générer depuis le catalogue</a>
-          <span class="muted">|</span>
-          <a href="{% url 'create_shopping_list' h.id %}">Créer une liste manuellement</a>
-          <span class="muted">|</span>
-          <a href="{% url 'reference_list' h.id %}">Catalogue</a>
+          <div class="row" style="justify-content:space-between;">
+            <div>
+              <div style="font-weight:800;">{{ sl.household.name }}</div>
+              <div class="muted">{{ sl.name }}</div>
+            </div>
+            <div class="row">
+              <a class="badge" href="{% url 'reference_list' sl.household.id %}">Catalogue</a>
+              <a class="badge" href="{% url 'shopping_list_detail' sl.id %}">Ouvrir</a>
+            </div>
+          </div>
         </li>
       {% empty %}
-        <li>Tu dois d’abord appartenir à un foyer.</li>
-      {% endfor %}
-    </ul>
-  </div>
-
-  <div class="card">
-    <h3>Mes listes</h3>
-    <ul>
-      {% for sl in shopping_lists %}
-        <li>
-          <a href="{% url 'shopping_list_detail' sl.id %}"><strong>{{ sl.name }}</strong></a>
-          <span class="muted">— {{ sl.household.name }}</span>
-        </li>
-      {% empty %}
-        <li>Aucune liste de courses.</li>
+        <li class="muted">Aucune liste.</li>
       {% endfor %}
     </ul>
   </div>

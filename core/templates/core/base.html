@@ -1,37 +1,35 @@
+{% load static %}
 <!doctype html>
 <html lang="fr">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{% block title %}Courses{% endblock %}</title>
-    <style>
-      body { font-family: system-ui, Arial, sans-serif; max-width: 980px; margin: 24px auto; padding: 0 12px; }
-      header { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom: 18px; }
-      nav a { margin-right: 10px; }
-      .card { border:1px solid #ddd; border-radius:10px; padding:14px; margin: 12px 0; }
-      .muted { color:#666; }
-      input, select, button { padding: 8px; margin: 4px 0; }
-      button { cursor: pointer; }
-      ul { padding-left: 18px; }
-      .row { display:flex; gap:10px; flex-wrap: wrap; align-items: end; }
-      .badge { display:inline-block; padding:2px 8px; border:1px solid #ddd; border-radius:999px; font-size: 12px; }
-      .danger { border-color:#f2b8b5; }
-    </style>
-  </head>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>{% block title %}Courses{% endblock %}</title>
+  <link rel="stylesheet" href="{% static 'core/css/app.css' %}">
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a class="brand" href="{% url 'shopping_lists' %}">Courses</a>
 
-  <body>
-    <header>
-      <div>
-        <strong>Courses</strong>
-        <span class="muted">— {{ request.user.username }}</span>
-      </div>
-      <nav>
-        <a href="{% url 'my_households' %}">Mes foyers</a>
+      <nav class="nav">
         <a href="{% url 'shopping_lists' %}">Listes</a>
-        <a href="/admin/">Admin</a>
+        <a href="{% url 'my_households' %}">Foyers</a>
+        <a href="{% url 'receipt_list' %}">Tickets</a>
       </nav>
-    </header>
+    </div>
+  </header>
+
+  <main class="container">
+    {% if messages %}
+      <div class="card">
+        {% for message in messages %}
+          <div class="muted">{{ message }}</div>
+        {% endfor %}
+      </div>
+    {% endif %}
 
     {% block content %}{% endblock %}
-  </body>
+  </main>
+</body>
 </html>

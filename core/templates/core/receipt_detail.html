@@ -1,0 +1,122 @@
+{% extends "core/base.html" %}
+{% block title %}Ticket{% endblock %}
+
+{% block content %}
+  <div class="row" style="justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;">
+    <div>
+      <h1>Ticket</h1>
+      <div class="muted">
+        Foyer : <strong>{{ receipt.household.name }}</strong>
+        • Liste : <a href="{% url 'shopping_list_detail' receipt.shopping_list.id %}">{{ receipt.shopping_list.name }}</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <form method="post" action="{% url 'update_receipt_header' receipt.id %}">
+      {% csrf_token %}
+      <div class="row" style="gap:10px; flex-wrap:wrap; align-items:flex-end;">
+        <div style="min-width:220px; flex:1;">
+          <label class="muted">Magasin</label><br>
+          <input name="store_name" placeholder="ex : Super U" value="{{ receipt.store_name }}" style="width:100%;">
+        </div>
+
+        <div style="min-width:220px;">
+          <label class="muted">Date / heure</label><br>
+          <input type="datetime-local" name="purchased_at" value="{{ receipt.purchased_at|date:'Y-m-d\\TH:i' }}">
+        </div>
+
+        <div style="min-width:180px;">
+          <label class="muted">Total caisse</label><br>
+          <input name="paper_total" inputmode="decimal"
+                 placeholder="ex : 42.37"
+                 value="{% if receipt.paper_total is not None %}{{ receipt.paper_total|floatformat:2 }}{% endif %}">
+        </div>
+
+        <div style="min-width:120px;">
+          <button class="btn-primary" type="submit">Enregistrer</button>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <div class="card" style="margin-top:12px;">
+    <div class="row" style="gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;">
+      <div class="row" style="gap:10px; flex-wrap:wrap; align-items:center;">
+        <div class="pill">Estimé : <strong>{{ estimated_total|floatformat:2 }} €</strong></div>
+        <div class="pill">Calculé : <strong>{{ actual_total|floatformat:2 }} €</strong></div>
+
+        {% if paper_total is not None %}
+          <div class="pill">Caisse : <strong>{{ paper_total|floatformat:2 }} €</strong></div>
+          <div class="pill">Écart : <strong>{{ delta|floatformat:2 }} €</strong></div>
+
+          {% if ok %}
+            <div class="pill" title="OK (écart ≤ {{ tolerance }} €)">✅ OK</div>
+          {% else %}
+            <div class="pill" title="KO (écart > {{ tolerance }} €)">❌ KO</div>
+          {% endif %}
+        {% else %}
+          <div class="pill" title="Renseigne le total caisse pour activer le contrôle">⚠️ Total caisse manquant</div>
+        {% endif %}
+      </div>
+
+      <div class="row" style="gap:10px; flex-wrap:wrap; align-items:center;">
+        <form method="post" action="{% url 'validate_receipt' receipt.id %}" style="margin:0;">
+          {% csrf_token %}
+          <button class="btn-primary" type="submit">Contrôler / Valider</button>
+        </form>
+        <a class="btn-secondary" href="{% url 'receipt_list' %}">← Historique</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px;">
+    <h2>Lignes</h2>
+
+    {% if items %}
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        {% for it in items %}
+          <div style="border:1px solid rgba(0,0,0,.08); border-radius:10px; padding:12px;">
+            <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
+
+              <div style="min-width:260px; flex:1;">
+                <div style="font-weight:800;">{{ it.position }}. {{ it.name }}</div>
+                <div class="muted" style="margin-top:4px;">
+                  Estimé :
+                  {% if it.estimated_price is not None %}
+                    {{ it.estimated_price|floatformat:2 }} €
+                  {% else %}
+                    —
+                  {% endif %}
+                </div>
+              </div>
+
+              <div style="min-width:320px; flex:0;">
+                <form method="post" action="{% url 'update_receipt_item_price' it.id %}" style="margin:0;">
+                  {% csrf_token %}
+                  <div class="row" style="gap:8px; align-items:center; justify-content:flex-end; flex-wrap:wrap;">
+                    <input name="actual_price" inputmode="decimal" placeholder="Prix réel"
+                           value="{% if it.actual_price is not None %}{{ it.actual_price|floatformat:2 }}{% endif %}"
+                           style="width:140px;">
+                    <button type="submit" class="btn-primary">OK</button>
+
+                    <div class="pill">
+                      {% if it.actual_price is not None %}
+                        <strong>{{ it.actual_price|floatformat:2 }} €</strong>
+                      {% else %}
+                        <span class="muted">manquant</span>
+                      {% endif %}
+                    </div>
+                  </div>
+                </form>
+              </div>
+
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="muted">Aucune ligne sur ce ticket.</div>
+    {% endif %}
+  </div>
+{% endblock %}

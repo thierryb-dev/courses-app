@@ -1,0 +1,31 @@
+{% extends "core/base.html" %}
+{% block title %}Générer liste{% endblock %}
+
+{% block content %}
+  <h1>Générer la liste magasin — {{ household.name }}</h1>
+
+  <p>
+    <a href="{% url 'reference_list' household.id %}">← Retour au catalogue</a>
+  </p>
+
+  <div class="card">
+    <h3>Produits sélectionnés</h3>
+
+    {% if ref_items %}
+      <ul>
+        {% for it in ref_items %}
+          <li><strong>{{ it.name }}</strong> <span class="muted">— {{ it.get_aisle_display }}</span></li>
+        {% endfor %}
+      </ul>
+
+      <form method="post">
+        {% csrf_token %}
+        <label>Nom de la liste</label><br/>
+        <input name="list_name" placeholder="ex: Courses semaine" />
+        <button type="submit">Créer la liste magasin</button>
+      </form>
+    {% else %}
+      <p class="muted">Aucun produit sélectionné. Retourne au catalogue et coche des produits.</p>
+    {% endif %}
+  </div>
+{% endblock %}

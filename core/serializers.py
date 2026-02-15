@@ -12,8 +12,8 @@ class HouseholdSerializer(serializers.ModelSerializer):
 class MembershipSerializer(serializers.ModelSerializer):
     class Meta:
         model = Membership
-        fields = ["id", "household", "user", "role", "joined_at"]
-        read_only_fields = ["joined_at"]
+        fields = ["id", "household", "user", "role", "created_at"]
+        read_only_fields = ["created_at"]
 
 
 class ListItemSerializer(serializers.ModelSerializer):
@@ -23,11 +23,13 @@ class ListItemSerializer(serializers.ModelSerializer):
             "id",
             "shopping_list",
             "name",
+            "aisle",
             "quantity",
             "note",
             "is_checked",
             "checked_at",
             "checked_by",
+            "estimated_price",
             "created_by",
             "created_at",
         ]
@@ -39,5 +41,5 @@ class ShoppingListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ShoppingList
-        fields = ["id", "household", "name", "created_by", "created_at", "items"]
-        read_only_fields = ["created_by", "created_at"]
+        fields = ["id", "household", "name", "created_at", "items"]
+        read_only_fields = ["created_at"]

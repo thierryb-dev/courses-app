@@ -1,0 +1,64 @@
+{% extends "core/base.html" %}
+{% block title %}Ticket{% endblock %}
+
+{% block content %}
+  <div class="row" style="justify-content:space-between;">
+    <div>
+      <h1>Ticket appli</h1>
+      <div class="muted">{{ receipt.household.name }} • {{ receipt.purchased_at|date:"d/m/Y H:i" }}</div>
+    </div>
+
+    <div class="kpi">
+      <div class="pill"><strong>{{ estimated_total }}</strong> € estimé</div>
+      <div class="pill"><strong>{{ actual_total }}</strong> € réel saisi</div>
+      <div class="pill"><strong>{{ missing_actual_count }}</strong> manquant(s)</div>
+      {% if receipt.paper_total %}
+        <div class="pill"><strong>{{ receipt.paper_total }}</strong> € ticket papier</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>En-tête</h2>
+    <form method="post" action="{% url 'receipt_update_header' receipt.id %}">
+      {% csrf_token %}
+      <div class="row">
+        <input name="store_name" placeholder="Magasin" value="{{ receipt.store_name }}" style="flex:1; min-width:220px;">
+        <input name="paper_total" placeholder="Total ticket papier (€)" value="{% if receipt.paper_total %}{{ receipt.paper_total }}{% endif %}" style="width:220px;">
+        <button class="btn-primary" type="submit">Enregistrer</button>
+      </div>
+      <div class="muted" style="margin-top:8px;">
+        Saisis le total du ticket papier pour comparer avec le total réel saisi ligne par ligne.
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Lignes</h2>
+    <ul class="list">
+      {% for line in items %}
+        <li>
+          <div class="row" style="justify-content:space-between;">
+            <div>
+              <div style="font-weight:800;">{{ line.position }}. {{ line.name }}</div>
+              <div class="muted">
+                Estimé :
+                {% if line.estimated_price %}{{ line.estimated_price }} €{% else %}—{% endif %}
+                • Réel :
+                {% if line.actual_price %}{{ line.actual_price }} €{% else %}—{% endif %}
+              </div>
+            </div>
+
+            <form class="row" method="post" action="{% url 'receipt_item_update' receipt.id line.id %}">
+              {% csrf_token %}
+              <input name="actual_price" placeholder="Prix réel (€)" value="{% if line.actual_price %}{{ line.actual_price }}{% endif %}" style="width:160px;">
+              <button type="submit">OK</button>
+            </form>
+          </div>
+        </li>
+      {% empty %}
+        <li class="muted">Aucune ligne.</li>
+      {% endfor %}
+    </ul>
+  </div>
+{% endblock %}

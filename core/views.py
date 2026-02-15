@@ -21,7 +21,11 @@ def create_household(request):
         name = (request.POST.get("name") or "").strip()
         if name:
             household = Household.objects.create(name=name, created_by=request.user)
-            Membership.objects.create(household=household, user=request.user, role=Membership.ROLE_OWNER)
+            Membership.objects.create(
+                household=household,
+                user=request.user,
+                role=Membership.ROLE_OWNER,
+            )
             return redirect("my_households")
 
     return render(request, "core/create_household.html")

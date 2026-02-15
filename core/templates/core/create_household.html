@@ -3,16 +3,15 @@
 
 {% block content %}
   <h1>Créer un foyer</h1>
+  <div class="muted">Un foyer = un groupe (famille, coloc…).</div>
 
   <div class="card">
     <form method="post">
       {% csrf_token %}
-      <label>Nom du foyer</label><br />
-      <input name="name" required placeholder="ex: Maison" />
-      <br />
-      <button type="submit">Créer</button>
+      <div class="row">
+        <input name="name" placeholder="Nom du foyer (ex : Maison)" required style="flex:1; min-width:220px;">
+        <button class="btn-primary" type="submit">Créer</button>
+      </div>
     </form>
   </div>
-
-  <p><a href="{% url 'my_households' %}">← Retour</a></p>
 {% endblock %}
