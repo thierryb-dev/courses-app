@@ -105,6 +105,13 @@ urlpatterns = [
         name="receipt_list",
     ),
 
+    # ✅ Purge (staff only)
+    path(
+        "tickets/purge/",
+        views_receipt.receipt_purge_confirm,
+        name="receipt_purge",
+    ),
+
     # Création depuis une liste
     path(
         "shopping-lists/<int:shopping_list_id>/ticket/create/",

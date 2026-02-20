@@ -5,6 +5,7 @@ from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.admin.views.decorators import staff_member_required
 from django.db import transaction
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -35,7 +36,7 @@ def _enrich_receipt_for_ui(r: Receipt) -> Receipt:
     Attache des attributs calculés directement sur l'instance (utiles en template),
     en supposant que items est prefetch dans la liste.
     """
-    r.lines_count = len(r.items.all())  # ✅ remplace .count() (évite COUNT(*) par receipt)
+    r.lines_count = len(r.items.all())  # évite COUNT(*)
     r.actual_total_ui = r.actual_total
     r.estimated_total_ui = r.estimated_total
 
@@ -71,7 +72,7 @@ def create_receipt(request: HttpRequest, shopping_list_id: int) -> HttpResponse:
         messages.error(request, "Cette liste est clôturée. Démarre une nouvelle session.")
         return redirect("shopping_lists")
 
-    # ✅ Exception ciblée (reverse OneToOne)
+    # OneToOne reverse
     try:
         existing = shopping_list.receipt
         return redirect("receipt_detail", receipt_id=existing.id)
@@ -101,19 +102,23 @@ def create_receipt(request: HttpRequest, shopping_list_id: int) -> HttpResponse:
                     position=pos,
                     name=it.name,
                     estimated_price=it.estimated_price,
-                    actual_price=None,
+                    # ✅ DEMANDE : par défaut, prix réel = prix saisi en magasin
+                    actual_price=it.estimated_price,
                 )
             )
         ReceiptItem.objects.bulk_create(lines)
 
-    messages.success(request, "Ticket créé. Renseigne le total caisse puis les prix réels.")
+    messages.success(
+        request,
+        "Ticket créé. Les prix réels sont pré-remplis avec tes estimations : "
+        "tu ne modifies que les lignes qui diffèrent, puis tu contrôles/valides."
+    )
     return redirect("receipt_detail", receipt_id=receipt.id)
 
 
 @login_required
 def receipt_detail(request: HttpRequest, receipt_id: int) -> HttpResponse:
     receipt = _user_receipt_or_404(request.user, receipt_id)
-
     items = receipt.items.all().order_by("position", "id")
 
     estimated_total = receipt.estimated_total
@@ -153,7 +158,7 @@ def update_receipt_header(request: HttpRequest, receipt_id: int) -> HttpResponse
 
     receipt.store_name = store_name
 
-    # ✅ timezone.make_aware() sur datetime-local (naïf)
+    # timezone.make_aware() sur datetime-local (naïf)
     if purchased_at_raw:
         try:
             from datetime import datetime
@@ -231,3 +236,31 @@ def validate_receipt(request: HttpRequest, receipt_id: int) -> HttpResponse:
         f"Contrôle KO ❌ : somme lignes = {actual_total:.2f} €, total ticket = {receipt.paper_total:.2f} €, écart = {delta:.2f} €.",
     )
     return redirect("receipt_detail", receipt_id=receipt.id)
+
+
+# ==========================================
+# Purge (STAFF) : supprimer tous les tickets
+# ==========================================
+
+@staff_member_required
+def receipt_purge_confirm(request: HttpRequest) -> HttpResponse:
+    """
+    Page de confirmation + POST pour supprimer TOUS les tickets.
+    Visible uniquement pour les comptes staff.
+    """
+    receipts_count = Receipt.objects.count()
+    items_count = ReceiptItem.objects.count()
+
+    if request.method == "POST":
+        with transaction.atomic():
+            # Supprime ReceiptItem via cascade, mais on peut supprimer directement Receipt
+            Receipt.objects.all().delete()
+
+        messages.success(request, "Tous les tickets ont été supprimés.")
+        return redirect("receipt_list")
+
+    return render(
+        request,
+        "core/receipt_purge_confirm.html",
+        {"receipts_count": receipts_count, "items_count": items_count},
+    )

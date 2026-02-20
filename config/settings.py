@@ -33,7 +33,9 @@ SECRET_KEY = os.getenv(
     "django-insecure-anzbmd&37%gu6k!&rx@f%gjc$8gk$0=*w=d3tu=(%u(hu+d))7",
 )
 
-DEBUG = os.getenv("DJANGO_DEBUG", "1") in ("1", "True", "true", "yes", "YES")
+
+# DEBUG = os.getenv("DJANGO_DEBUG", "1") in ("1", "True", "true", "yes", "YES")
+DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = [
     h.strip()
@@ -113,11 +115,11 @@ TEMPLATES = [
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": os.getenv("POSTGRES_DB", "courses"),
-        "USER": os.getenv("POSTGRES_USER", "courses_user"),
-        "PASSWORD": os.getenv("POSTGRES_PASSWORD", "Idemo12435"),
-        "HOST": os.getenv("POSTGRES_HOST", "127.0.0.1"),
-        "PORT": os.getenv("POSTGRES_PORT", "5432"),
+        "NAME": os.getenv("POSTGRES_DB"),
+        "USER": os.getenv("POSTGRES_USER"),
+        "PASSWORD": os.getenv("POSTGRES_PASSWORD"),
+        "HOST": os.getenv("POSTGRES_HOST"),
+        "PORT": os.getenv("POSTGRES_PORT"),
         "OPTIONS": {"connect_timeout": 3},
     }
 }

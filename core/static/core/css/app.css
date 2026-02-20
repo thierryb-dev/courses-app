@@ -1,3 +1,11 @@
+/* ==========================================================================
+   app.css — Version premium structurée
+   - Design system (tokens)
+   - Composants (cards, pills, buttons, forms)
+   - Pages : Shopping list (focus prix), Ticket (mode scan)
+   - Responsive + accessibilité (focus-visible)
+   ========================================================================== */
+
 :root{
   --bg: #0b0d12;
   --panel: rgba(255,255,255,0.06);
@@ -9,11 +17,18 @@
   --brand: #7c5cff;
   --brand-2: #31d0aa;
   --danger: #ff4d6d;
+  --success: #31d0aa;
+  --warning: #ffb020;
 
   --shadow: 0 18px 60px rgba(0,0,0,0.55);
+  --shadow-soft: 0 10px 30px rgba(0,0,0,0.35);
   --radius: 16px;
+  --radius-sm: 14px;
 }
 
+/* =========================
+   Base / Reset
+   ========================= */
 *{ box-sizing:border-box; }
 html,body{ height:100%; }
 
@@ -37,6 +52,9 @@ a:hover{ text-decoration:underline; }
   padding: 22px 14px 48px;
 }
 
+/* =========================
+   Topbar
+   ========================= */
 .topbar{
   position: sticky;
   top:0;
@@ -63,13 +81,6 @@ a:hover{ text-decoration:underline; }
   font-weight: 800;
   letter-spacing: 0.2px;
 }
-.brand-badge{
-  width: 34px;
-  height: 34px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, var(--brand), var(--brand-2));
-  box-shadow: 0 10px 30px rgba(124,92,255,0.25);
-}
 
 .nav{
   display:flex;
@@ -90,6 +101,9 @@ a:hover{ text-decoration:underline; }
   background: rgba(255,255,255,0.04);
 }
 
+/* =========================
+   Typography
+   ========================= */
 h1,h2,h3{
   margin: 0 0 12px 0;
   letter-spacing: -0.02em;
@@ -100,6 +114,24 @@ h3{ font-size: 16px; color: var(--muted); font-weight: 650; }
 
 .muted{ color: var(--muted); }
 
+/* =========================
+   Layout helpers
+   ========================= */
+.row{
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.mt-8{ margin-top: 8px; }
+.mt-10{ margin-top: 10px; }
+.mt-12{ margin-top: 12px; }
+.w-100{ width:100%; }
+
+/* =========================
+   Card
+   ========================= */
 .card{
   background: linear-gradient(180deg, var(--panel), rgba(255,255,255,0.04));
   border: 1px solid var(--border);
@@ -109,26 +141,114 @@ h3{ font-size: 16px; color: var(--muted); font-weight: 650; }
   box-shadow: var(--shadow);
 }
 
-.row{
-  display:flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.badge{
+/* =========================
+   Pills / KPI
+   ========================= */
+.pill{
   display:inline-flex;
   align-items:center;
   gap:6px;
-  padding: 4px 10px;
-  border-radius: 999px;
+  padding: 8px 10px;
+  border-radius: 14px;
   border: 1px solid var(--border);
-  background: rgba(255,255,255,0.05);
+  background: rgba(255,255,255,0.04);
   color: var(--muted);
-  font-size: 12px;
   line-height: 18px;
 }
+.pill strong{ color: var(--text); }
 
+.pill-ok{ border-color: rgba(49,208,170,0.45); background: rgba(49,208,170,0.10); }
+.pill-ko{ border-color: rgba(255,77,109,0.45); background: rgba(255,77,109,0.10); }
+.pill-warn{ border-color: rgba(255,176,32,0.45); background: rgba(255,176,32,0.10); }
+
+.kpi{
+  display:flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* =========================
+   Buttons (unified)
+   - Utilise class="btn btn-primary" etc.
+   - Fonctionne sur <a> et <button>
+   ========================= */
+.btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(255,255,255,0.06);
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.btn:hover{
+  background: rgba(255,255,255,0.10);
+  text-decoration:none;
+}
+
+.btn:disabled{
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Compat templates existants (si tu utilises encore btn-primary sans .btn) */
+.btn-primary, .btn-secondary, .btn-success, .btn-danger{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,0.12);
+  cursor:pointer;
+  text-decoration:none;
+  font-weight:700;
+}
+
+.btn-primary{
+  background: linear-gradient(135deg, var(--brand), var(--brand-2));
+  border-color: transparent;
+  color: rgba(0,0,0,0.82);
+}
+.btn-primary:hover{ filter: brightness(1.02); }
+
+.btn-secondary{
+  background: rgba(255,255,255,0.06);
+  border-color: rgba(255,255,255,0.16);
+  color: var(--text);
+}
+.btn-secondary:hover{ background: rgba(255,255,255,0.10); }
+
+.btn-success{
+  background: rgba(49,208,170,0.14);
+  border-color: rgba(49,208,170,0.40);
+  color: var(--text);
+}
+.btn-success:hover{ background: rgba(49,208,170,0.20); }
+
+.btn-danger{
+  background: rgba(255,77,109,0.14);
+  border-color: rgba(255,77,109,0.40);
+  color: var(--text);
+}
+.btn-danger:hover{ background: rgba(255,77,109,0.20); }
+
+/* Liens “désactivés” si besoin */
+a.is-disabled{
+  pointer-events:none;
+  opacity: 0.55;
+  cursor:not-allowed;
+}
+
+/* =========================
+   Forms
+   ========================= */
 input, select, button{
   font: inherit;
   padding: 10px 12px;
@@ -146,42 +266,19 @@ input:focus, select:focus{
   box-shadow: 0 0 0 4px rgba(124,92,255,0.18);
 }
 
-button{
-  cursor: pointer;
-  border-color: rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.06);
+/* Focus clavier plus propre */
+input:focus-visible,
+select:focus-visible,
+button:focus-visible,
+a:focus-visible{
+  outline: none;
+  border-color: rgba(124,92,255,0.65);
+  box-shadow: 0 0 0 4px rgba(124,92,255,0.18);
 }
-button:hover{ background: rgba(255,255,255,0.10); }
-button:disabled{ cursor: not-allowed; opacity: 0.55; }
 
-.btn-primary{
-  background: linear-gradient(135deg, var(--brand), var(--brand-2));
-  border-color: transparent;
-  color: rgba(0,0,0,0.82);
-  font-weight: 750;
-}
-.btn-primary:hover{ filter: brightness(1.02); }
-
-.btn-danger{
-  background: rgba(255,77,109,0.12);
-  border-color: rgba(255,77,109,0.35);
-}
-.btn-danger:hover{ background: rgba(255,77,109,0.18); }
-
-.kpi{
-  display:flex;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-.kpi .pill{
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  background: rgba(255,255,255,0.04);
-  color: var(--muted);
-}
-.kpi .pill strong{ color: var(--text); }
-
+/* =========================
+   Lists
+   ========================= */
 .list{
   list-style:none;
   padding-left:0;
@@ -195,4 +292,265 @@ button:disabled{ cursor: not-allowed; opacity: 0.55; }
 .list li:hover{
   border-color: var(--border);
   background: rgba(255,255,255,0.04);
+}
+
+/* ==========================================================================
+   Page — Shopping list detail (focus prix)
+   ========================================================================== */
+
+.page-titlebar{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+}
+
+.total-box{
+  text-align:right;
+  min-width:260px;
+}
+.total-box .label{
+  font-size:14px;
+  color: var(--muted);
+}
+.total-box .value{
+  font-size:28px;
+  font-weight:800;
+  letter-spacing:-0.02em;
+}
+.total-box .hint{
+  font-size:12px;
+  color: rgba(255,255,255,0.55);
+  margin-top:4px;
+}
+
+.section-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.items-stack{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.item-card{
+  border:1px solid rgba(255,255,255,.10);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  background: rgba(0,0,0,0.10);
+  transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease, background .12s ease;
+}
+.item-card:hover{
+  border-color: rgba(255,255,255,.16);
+  background: rgba(255,255,255,0.03);
+}
+
+.item-card__inner{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.item-main{
+  display:flex;
+  gap:10px;
+  align-items:flex-start;
+  min-width:280px;
+  flex:1;
+}
+
+.item-title{
+  font-weight:800;
+  font-size:16px;
+}
+.item-meta{
+  margin-top:2px;
+  font-size:13px;
+  color: rgba(255,255,255,0.70);
+}
+.item-note{
+  margin-top:6px;
+  font-size:13px;
+  color: rgba(255,255,255,0.78);
+}
+
+.price-box{
+  min-width:340px;
+  flex:0;
+}
+.price-label{
+  font-size:13px;
+  color: rgba(255,255,255,0.70);
+  margin-bottom:6px;
+}
+.price-form{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+  margin:0;
+}
+.price-input{
+  width: 160px;
+  font-weight: 750;
+}
+.price-value{ opacity:.9; }
+.price-empty{ opacity:.6; }
+
+/* ✅ Emphase prix quand item est “Pris ✅” */
+.item-card--checked{
+  border-color: rgba(49,208,170,0.35);
+  background: rgba(49,208,170,0.06);
+}
+.item-card--checked .price-label{
+  color: rgba(49,208,170,0.85);
+}
+.item-card--checked .price-input{
+  border-color: rgba(49,208,170,0.55);
+  box-shadow: 0 0 0 4px rgba(49,208,170,0.14);
+}
+.item-card--checked:focus-within{
+  box-shadow: var(--shadow-soft), 0 0 0 1px rgba(49,208,170,0.25);
+  transform: translateY(-1px);
+}
+
+/* ✅ Emphase cible autofocus */
+.price-input.is-focus-target{
+  outline: none;
+  border-color: rgba(255,176,32,0.65);
+  box-shadow: 0 0 0 4px rgba(255,176,32,0.18);
+}
+
+/* ==========================================================================
+   Page — Ticket (mode scan)
+   ========================================================================== */
+
+.receipt-head-grid{
+  display:grid;
+  grid-template-columns: 1.2fr 1fr 0.7fr 0.5fr;
+  gap:10px;
+}
+
+.receipt-summary{
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  align-items:center;
+}
+
+.line-card{
+  border:1px solid rgba(255,255,255,.10);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  background: rgba(0,0,0,0.10);
+  transition: border-color .12s ease, background .12s ease;
+}
+
+.line-card__inner{
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+}
+
+.line-main{
+  min-width:260px;
+  flex:1;
+}
+
+.line-title{
+  font-weight:800;
+}
+
+.line-action{
+  min-width:340px;
+  flex:0;
+}
+
+.line-form{
+  margin:0;
+  display:flex;
+  gap:8px;
+  align-items:center;
+  justify-content:flex-end;
+  flex-wrap:wrap;
+}
+
+.line-input{
+  width: 160px;
+  font-weight: 750;
+}
+
+/* Lignes manquantes : surbrillance orange */
+.line-card--missing{
+  border-color: rgba(255,176,32,0.35);
+  background: rgba(255,176,32,0.06);
+}
+.line-card--missing .line-input{
+  border-color: rgba(255,176,32,0.55);
+  box-shadow: 0 0 0 4px rgba(255,176,32,0.12);
+}
+
+/* Lignes saisies : léger vert */
+.line-card--done{
+  border-color: rgba(49,208,170,0.25);
+  background: rgba(49,208,170,0.04);
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 900px){
+  .receipt-head-grid{ grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px){
+  .container{ padding: 14px 12px 40px; }
+
+  .page-titlebar{
+    align-items: stretch;
+  }
+
+  .total-box{
+    text-align:left;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .item-main{
+    min-width: 0;
+    width: 100%;
+  }
+
+  .price-box{
+    min-width: 0;
+    width: 100%;
+  }
+
+  .line-main{
+    min-width: 0;
+    width: 100%;
+  }
+
+  .line-action{
+    min-width: 0;
+    width: 100%;
+  }
+
+  .price-form,
+  .line-form{
+    justify-content:flex-start;
+  }
 }

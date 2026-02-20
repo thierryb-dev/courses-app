@@ -1,16 +1,12 @@
 {% extends "core/base.html" %}
-
 {% block title %}Liste — {{ shopping_list.household.name }}{% endblock %}
-
 {% block content %}
-<div class="container">
 
-  <!-- Header -->
   <div class="card">
-    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap;">
+    <div class="page-titlebar">
       <div>
         <h1 style="margin:0;">{{ shopping_list.name }}</h1>
-        <div style="opacity:.8; margin-top:6px;">
+        <div class="muted mt-8">
           Foyer : <strong>{{ shopping_list.household.name }}</strong>
           {% if is_closed %}
             • <span class="pill">Clôturée</span>
@@ -18,38 +14,36 @@
             • <span class="pill">Ouverte</span>
           {% endif %}
         </div>
+
+        <div class="kpi mt-10">
+          <div class="pill">Pris ✅ : <strong>{{ checked_count }}</strong></div>
+          <div class="pill">Prix manquants : <strong>{{ missing_estimate_count }}</strong></div>
+        </div>
       </div>
 
-      <div style="text-align:right; min-width:260px;">
-        <div style="font-size:14px; opacity:.8;">Coût panier estimé (items cochés)</div>
-        <div style="font-size:28px; font-weight:700;">
-          {{ running_total|floatformat:2 }} €
-        </div>
-        <div style="font-size:12px; opacity:.7; margin-top:4px;">
-          (utile avant passage en caisse)
-        </div>
+      <div class="total-box">
+        <div class="label">Coût panier estimé (items cochés)</div>
+        <div class="value">{{ running_total|floatformat:2 }} €</div>
+        <div class="hint">(en magasin : ajuste surtout les produits au poids)</div>
       </div>
     </div>
   </div>
 
-  <!-- Ticket (après caisse) -->
-  <div class="card" style="margin-top:12px;">
-    <div class="row" style="justify-content:space-between; align-items:center; gap:16px; flex-wrap:wrap;">
+  <div class="card mt-12">
+    <div class="section-head">
       <div>
-        <div style="font-weight:800;">Ticket (après caisse)</div>
-        <div class="muted">
-          Crée un ticket à partir des items cochés ✅ puis saisis les prix réels et le total.
-        </div>
+        <div style="font-weight:800;">Phase caisse</div>
+        <div class="muted">Quand tu es prêt, crée le ticket à partir des items cochés ✅.</div>
       </div>
 
-      <div class="row" style="gap:10px; flex-wrap:wrap;">
+      <div class="row" style="gap:10px;">
         {% if receipt %}
           <a class="btn-primary" href="{% url 'receipt_detail' receipt.id %}">Ouvrir le ticket</a>
         {% else %}
           <form method="post" action="{% url 'create_receipt' shopping_list.id %}" style="margin:0;">
             {% csrf_token %}
             <button class="btn-primary" type="submit" {% if not has_checked or is_closed %}disabled{% endif %}>
-              Créer le ticket
+              Je passe en caisse → Créer le ticket
             </button>
           </form>
         {% endif %}
@@ -57,19 +51,13 @@
     </div>
 
     {% if not receipt and not has_checked %}
-      <div class="muted" style="margin-top:8px;">
-        (Coche au moins un produit pris en rayon pour activer la création du ticket.)
-      </div>
+      <div class="muted mt-8">(Coche au moins un produit pris en rayon pour activer la caisse.)</div>
     {% endif %}
-
     {% if is_closed %}
-      <div class="muted" style="margin-top:8px;">
-        Cette liste est clôturée : aucune modification n'est autorisée.
-      </div>
+      <div class="muted mt-8">Liste clôturée : aucune modification n'est autorisée.</div>
     {% endif %}
   </div>
 
-  <!-- Add item -->
   <div class="card">
     <h2>Ajouter un item</h2>
 
@@ -78,7 +66,7 @@
     {% else %}
       <form method="post" action="{% url 'add_list_item' shopping_list.id %}">
         {% csrf_token %}
-        <div class="row" style="display:flex; gap:8px; flex-wrap:wrap; align-items:center;">
+        <div class="row" style="gap:8px; align-items:center;">
           <input name="name" placeholder="Ex : Lait" required style="flex:1; min-width:220px;">
           <select name="aisle" style="min-width:200px;">
             {% for k, label in aisle_choices %}
@@ -93,19 +81,16 @@
     {% endif %}
   </div>
 
-  <!-- Items -->
   <div class="card">
     <h2>Items</h2>
 
     {% if items %}
-      <div style="display:flex; flex-direction:column; gap:10px;">
-
+      <div class="items-stack">
         {% for item in items %}
-          <div style="border:1px solid rgba(0,0,0,.08); border-radius:10px; padding:12px;">
-            <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; flex-wrap:wrap;">
+          <div class="item-card {% if item.is_checked %}item-card--checked{% endif %}">
+            <div class="item-card__inner">
 
-              <div style="display:flex; gap:10px; align-items:flex-start; min-width:280px; flex:1;">
-
+              <div class="item-main">
                 {% if is_closed %}
                   <div class="btn-secondary" style="min-width:110px; text-align:center; opacity:.7;">
                     {% if item.is_checked %}Pris ✅{% else %}À prendre{% endif %}
@@ -122,53 +107,47 @@
                 {% endif %}
 
                 <div>
-                  <div style="font-weight:700; font-size:16px;">
-                    {{ item.name }}
-                  </div>
-
-                  <div style="opacity:.8; margin-top:2px; font-size:13px;">
+                  <div class="item-title">{{ item.name }}</div>
+                  <div class="item-meta">
                     Rayon : {{ item.get_aisle_display }}
                     {% if item.quantity %} • Quantité : {{ item.quantity }}{% endif %}
                   </div>
-
                   {% if item.note %}
-                    <div style="margin-top:6px; font-size:13px; opacity:.85;">
-                      📝 {{ item.note }}
-                    </div>
+                    <div class="item-note">📝 {{ item.note }}</div>
                   {% endif %}
                 </div>
               </div>
 
-              <div style="min-width:340px; flex:0;">
-                <div style="font-size:13px; opacity:.8; margin-bottom:6px;">
-                  Prix estimé (modifiable, notamment pour le poids)
-                </div>
+              <div class="price-box">
+                <div class="price-label">Prix estimé (focus après “Pris ✅”)</div>
 
                 {% if is_closed %}
-                  <div class="row" style="gap:8px; align-items:center;">
-                    {% if item.estimated_price is not None %}
-                      <span style="opacity:.9;">{{ item.estimated_price|floatformat:2 }} €</span>
-                    {% else %}
-                      <span style="opacity:.6;">—</span>
-                    {% endif %}
-                  </div>
+                  {% if item.estimated_price is not None %}
+                    <span class="price-value">{{ item.estimated_price|floatformat:2 }} €</span>
+                  {% else %}
+                    <span class="price-empty">—</span>
+                  {% endif %}
                 {% else %}
-                  <form method="post" action="{% url 'update_estimated_price' item.id %}"
-                        style="display:flex; gap:8px; align-items:center; margin:0;">
+                  <form method="post" action="{% url 'update_estimated_price' item.id %}" class="price-form">
                     {% csrf_token %}
                     <input
+                      class="price-input"
+                      id="price-{{ item.id }}"
+                      data-price-input="1"
+                      data-item-id="{{ item.id }}"
+                      data-is-checked="{% if item.is_checked %}1{% else %}0{% endif %}"
+                      data-has-price="{% if item.estimated_price is not None %}1{% else %}0{% endif %}"
                       name="estimated_price"
                       inputmode="decimal"
                       placeholder="ex : 3.49"
                       value="{% if item.estimated_price is not None %}{{ item.estimated_price|floatformat:2 }}{% endif %}"
-                      style="width:140px;"
                     >
                     <button type="submit" class="btn-primary">OK</button>
 
                     {% if item.estimated_price is not None %}
-                      <span style="opacity:.9;">{{ item.estimated_price|floatformat:2 }} €</span>
+                      <span class="price-value">{{ item.estimated_price|floatformat:2 }} €</span>
                     {% else %}
-                      <span style="opacity:.6;">—</span>
+                      <span class="price-empty">—</span>
                     {% endif %}
                   </form>
 
@@ -176,26 +155,47 @@
                     {% csrf_token %}
                     <button type="submit" class="btn-secondary">Supprimer</button>
                   </form>
-
-                  <div style="margin-top:6px; font-size:12px; opacity:.7;">
-                    Astuce : mets une estimation, puis ajuste quand le poids/prix exact est connu.
-                  </div>
                 {% endif %}
               </div>
 
             </div>
           </div>
         {% endfor %}
-
       </div>
     {% else %}
-      <p style="opacity:.8;">Aucun item pour le moment.</p>
+      <p class="muted">Aucun item pour le moment.</p>
     {% endif %}
   </div>
 
-  <div style="margin-top:10px;">
+  <div class="mt-10">
     <a class="btn-secondary" href="{% url 'shopping_lists' %}">← Retour aux listes</a>
   </div>
 
-</div>
+  {% if not is_closed %}
+  <script>
+    (function () {
+      try {
+        const focusId = {% if focus_price_id %}{{ focus_price_id }}{% else %}null{% endif %};
+
+        function focusInput(el){
+          el.classList.add("is-focus-target");
+          el.focus({ preventScroll: true });
+          el.scrollIntoView({ block: "center", behavior: "smooth" });
+          if (el.select) el.select();
+        }
+
+        if (focusId) {
+          const el = document.getElementById("price-" + focusId);
+          if (el) return focusInput(el);
+        }
+
+        // fallback : 1er coché sans prix
+        const inputs = Array.from(document.querySelectorAll('input[data-price-input="1"]'));
+        const target = inputs.find(i => i.dataset.isChecked === "1" && i.dataset.hasPrice === "0");
+        if (target) focusInput(target);
+      } catch (e) {}
+    })();
+  </script>
+  {% endif %}
+
 {% endblock %}

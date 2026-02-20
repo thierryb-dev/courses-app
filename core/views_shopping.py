@@ -34,11 +34,18 @@ def _reject_if_closed(request: HttpRequest, shopping_list: ShoppingList) -> bool
     return False
 
 
+def _next_checked_missing_estimate(shopping_list: ShoppingList, exclude_id: int | None = None) -> ListItem | None:
+    qs = shopping_list.items.filter(is_checked=True, estimated_price__isnull=True)
+    if exclude_id is not None:
+        qs = qs.exclude(id=exclude_id)
+    return qs.order_by("aisle", "created_at", "id").first()
+
+
 @login_required
 def shopping_lists(request: HttpRequest) -> HttpResponse:
     households = Household.objects.filter(memberships__user=request.user).distinct().order_by("name")
 
-    # UX actuelle: 1 liste ouverte par foyer, créée au besoin
+    # UX: 1 liste ouverte par foyer, créée au besoin
     open_lists = [get_or_create_open_list(h) for h in households]
 
     return render(request, "core/shopping_lists.html", {"lists": open_lists})
@@ -47,14 +54,23 @@ def shopping_lists(request: HttpRequest) -> HttpResponse:
 @login_required
 def shopping_list_detail(request: HttpRequest, shopping_list_id: int) -> HttpResponse:
     shopping_list = _user_list_or_404(request.user, shopping_list_id)
-    items = shopping_list.items.all().order_by("aisle", "is_checked", "created_at", "id")
+
+    # ✅ UX: “À prendre” puis “Pris” (réduit charge cognitive en magasin)
+    items = shopping_list.items.all().order_by("is_checked", "aisle", "created_at", "id")
 
     running_total = Decimal("0.00")
-    for it in items:
-        if it.is_checked and it.estimated_price is not None:
-            running_total += it.estimated_price
+    checked_count = 0
+    missing_estimate_count = 0
 
-    has_checked = shopping_list.items.filter(is_checked=True).exists()
+    for it in items:
+        if it.is_checked:
+            checked_count += 1
+            if it.estimated_price is None:
+                missing_estimate_count += 1
+            else:
+                running_total += it.estimated_price
+
+    has_checked = checked_count > 0
 
     try:
         receipt = shopping_list.receipt
@@ -62,6 +78,13 @@ def shopping_list_detail(request: HttpRequest, shopping_list_id: int) -> HttpRes
         receipt = None
 
     is_closed = shopping_list.closed_at is not None
+
+    # Focus demandé explicitement (après toggle) ou déduit (1er coché sans prix)
+    focus_price = (request.GET.get("focus_price") or "").strip()
+    focus_price_id = int(focus_price) if focus_price.isdigit() else None
+    if focus_price_id is None:
+        nxt = _next_checked_missing_estimate(shopping_list)
+        focus_price_id = nxt.id if nxt else None
 
     return render(
         request,
@@ -74,6 +97,9 @@ def shopping_list_detail(request: HttpRequest, shopping_list_id: int) -> HttpRes
             "has_checked": has_checked,
             "receipt": receipt,
             "is_closed": is_closed,
+            "checked_count": checked_count,
+            "missing_estimate_count": missing_estimate_count,
+            "focus_price_id": focus_price_id,
         },
     )
 
@@ -99,6 +125,7 @@ def add_list_item(request: HttpRequest, shopping_list_id: int) -> HttpResponse:
             note=note,
             created_by=request.user,
         )
+        messages.success(request, "Item ajouté.")
 
     return redirect("shopping_list_detail", shopping_list_id=shopping_list.id)
 
@@ -110,8 +137,14 @@ def toggle_list_item(request: HttpRequest, item_id: int) -> HttpResponse:
     if _reject_if_closed(request, item.shopping_list):
         return redirect("shopping_list_detail", shopping_list_id=item.shopping_list_id)
 
-    item.set_checked(request.user, not item.is_checked)
+    new_state = not item.is_checked
+    item.set_checked(request.user, new_state)
     item.save(update_fields=["is_checked", "checked_at", "checked_by"])
+
+    # ✅ UX: si on vient de “prendre” l’item, on force focus sur SON prix estimé
+    if new_state:
+        return redirect(f"/shopping-lists/{item.shopping_list_id}/?focus_price={item.id}")
+
     return redirect("shopping_list_detail", shopping_list_id=item.shopping_list_id)
 
 
@@ -130,9 +163,16 @@ def update_estimated_price(request: HttpRequest, item_id: int) -> HttpResponse:
             item.estimated_price = Decimal(raw)
         except (InvalidOperation, ValueError):
             messages.error(request, "Prix estimé invalide.")
-            return redirect("shopping_list_detail", shopping_list_id=item.shopping_list_id)
+            return redirect(f"/shopping-lists/{item.shopping_list_id}/?focus_price={item.id}")
 
     item.save(update_fields=["estimated_price"])
+    messages.success(request, "Prix estimé enregistré.")
+
+    # ✅ UX: enchaîne automatiquement vers le prochain coché sans prix
+    nxt = _next_checked_missing_estimate(item.shopping_list, exclude_id=item.id)
+    if nxt:
+        return redirect(f"/shopping-lists/{item.shopping_list_id}/?focus_price={nxt.id}")
+
     return redirect("shopping_list_detail", shopping_list_id=item.shopping_list_id)
 
 
@@ -145,4 +185,5 @@ def delete_list_item(request: HttpRequest, item_id: int) -> HttpResponse:
 
     shopping_list_id = item.shopping_list_id
     item.delete()
+    messages.success(request, "Item supprimé.")
     return redirect("shopping_list_detail", shopping_list_id=shopping_list_id)

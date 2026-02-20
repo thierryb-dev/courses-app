@@ -1,0 +1,42 @@
+{% extends "core/base.html" %}
+{% block title %}Purge tickets{% endblock %}
+
+{% block content %}
+  <div class="card">
+    <h1 style="margin:0;">Suppression de tous les tickets</h1>
+
+    <p class="muted mt-10">
+      Vous êtes sur le point de supprimer :
+      <br>
+      • <strong>{{ receipts_count }}</strong> ticket(s)
+      <br>
+      • <strong>{{ items_count }}</strong> ligne(s) associée(s)
+      <br><br>
+      ⚠️ Cette action est <strong>définitive et irréversible</strong>.
+    </p>
+
+    <form method="post" id="purge-form" style="margin-top:16px;">
+      {% csrf_token %}
+      <button class="btn-danger" type="submit">
+        Oui, supprimer définitivement
+      </button>
+
+      <a class="btn-secondary" href="{% url 'receipt_list' %}" style="margin-left:10px;">
+        Annuler
+      </a>
+    </form>
+  </div>
+
+  <script>
+    document.getElementById("purge-form").addEventListener("submit", function(e) {
+      const confirmed = confirm(
+        "Êtes-vous absolument certain de vouloir supprimer TOUS les tickets ?\n\nCette action est irréversible."
+      );
+
+      if (!confirmed) {
+        e.preventDefault();
+      }
+    });
+  </script>
+
+{% endblock %}

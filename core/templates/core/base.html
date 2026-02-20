@@ -13,9 +13,14 @@
       <a class="brand" href="{% url 'shopping_lists' %}">Courses</a>
 
       <nav class="nav">
-        <a href="{% url 'shopping_lists' %}">Listes</a>
+        
         <a href="{% url 'my_households' %}">Foyers</a>
+	<a href="{% url 'shopping_lists' %}">Listes</a>
         <a href="{% url 'receipt_list' %}">Tickets</a>
+
+        {% if user.is_staff %}
+          <a href="{% url 'receipt_purge' %}">Purge</a>
+        {% endif %}
       </nav>
     </div>
   </header>

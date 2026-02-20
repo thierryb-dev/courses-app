@@ -1,47 +1,60 @@
 {% extends "core/base.html" %}
 {% block title %}Ticket{% endblock %}
-
 {% block content %}
-  <div class="row" style="justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap;">
-    <div>
-      <h1>Ticket</h1>
-      <div class="muted">
-        Foyer : <strong>{{ receipt.household.name }}</strong>
-        • Liste : <a href="{% url 'shopping_list_detail' receipt.shopping_list.id %}">{{ receipt.shopping_list.name }}</a>
+
+  <div class="card">
+    <div class="page-titlebar">
+      <div>
+        <h1 style="margin:0;">Ticket</h1>
+        <div class="muted mt-8">
+          Foyer : <strong>{{ receipt.household.name }}</strong>
+          • Liste : <a href="{% url 'shopping_list_detail' receipt.shopping_list.id %}">{{ receipt.shopping_list.name }}</a>
+        </div>
+
+        <div class="kpi mt-10">
+          <div class="pill">Lignes : <strong>{{ lines_count }}</strong></div>
+          <div class="pill">Saisies : <strong>{{ filled_actual_count }}</strong></div>
+          <div class="pill">Manquantes : <strong>{{ missing_actual_count }}</strong></div>
+        </div>
+      </div>
+
+      <div class="total-box">
+        <div class="label">Mode scan</div>
+        <div class="value">{{ actual_total|floatformat:2 }} €</div>
+        <div class="hint">Objectif : total lignes = total caisse (± {{ tolerance }} €)</div>
       </div>
     </div>
   </div>
 
-  <div class="card">
+  <div class="card mt-12">
     <form method="post" action="{% url 'update_receipt_header' receipt.id %}">
       {% csrf_token %}
-      <div class="row" style="gap:10px; flex-wrap:wrap; align-items:flex-end;">
-        <div style="min-width:220px; flex:1;">
+      <div class="receipt-head-grid">
+        <div>
           <label class="muted">Magasin</label><br>
-          <input name="store_name" placeholder="ex : Super U" value="{{ receipt.store_name }}" style="width:100%;">
+          <input name="store_name" placeholder="ex : Super U" value="{{ receipt.store_name }}" class="w-100">
         </div>
 
-        <div style="min-width:220px;">
+        <div>
           <label class="muted">Date / heure</label><br>
-          <input type="datetime-local" name="purchased_at" value="{{ receipt.purchased_at|date:'Y-m-d\\TH:i' }}">
+          <input type="datetime-local" name="purchased_at" value="{{ receipt.purchased_at|date:'Y-m-d\\TH:i' }}" class="w-100">
         </div>
 
-        <div style="min-width:180px;">
+        <div>
           <label class="muted">Total caisse</label><br>
-          <input name="paper_total" inputmode="decimal"
-                 placeholder="ex : 42.37"
-                 value="{% if receipt.paper_total is not None %}{{ receipt.paper_total|floatformat:2 }}{% endif %}">
+          <input id="paper-total" name="paper_total" inputmode="decimal" placeholder="ex : 42.37"
+                 value="{% if receipt.paper_total is not None %}{{ receipt.paper_total|floatformat:2 }}{% endif %}" class="w-100">
         </div>
 
-        <div style="min-width:120px;">
-          <button class="btn-primary" type="submit">Enregistrer</button>
+        <div style="display:flex; align-items:flex-end; gap:8px;">
+          <button class="btn-primary w-100" type="submit">Enregistrer</button>
         </div>
       </div>
     </form>
   </div>
 
-  <div class="card" style="margin-top:12px;">
-    <div class="row" style="gap:10px; flex-wrap:wrap; align-items:center; justify-content:space-between;">
+  <div class="card mt-12">
+    <div class="receipt-summary">
       <div class="row" style="gap:10px; flex-wrap:wrap; align-items:center;">
         <div class="pill">Estimé : <strong>{{ estimated_total|floatformat:2 }} €</strong></div>
         <div class="pill">Calculé : <strong>{{ actual_total|floatformat:2 }} €</strong></div>
@@ -51,36 +64,50 @@
           <div class="pill">Écart : <strong>{{ delta|floatformat:2 }} €</strong></div>
 
           {% if ok %}
-            <div class="pill" title="OK (écart ≤ {{ tolerance }} €)">✅ OK</div>
+            <div class="pill pill-ok" title="OK (écart ≤ {{ tolerance }} €)">✅ OK</div>
           {% else %}
-            <div class="pill" title="KO (écart > {{ tolerance }} €)">❌ KO</div>
+            <div class="pill pill-ko" title="KO (écart > {{ tolerance }} €)">❌ KO</div>
           {% endif %}
         {% else %}
-          <div class="pill" title="Renseigne le total caisse pour activer le contrôle">⚠️ Total caisse manquant</div>
+          <div class="pill pill-warn" title="Renseigne le total caisse pour activer le contrôle">⚠️ Total caisse manquant</div>
         {% endif %}
       </div>
 
-      <div class="row" style="gap:10px; flex-wrap:wrap; align-items:center;">
+      <div class="row" style="gap:10px; align-items:center;">
         <form method="post" action="{% url 'validate_receipt' receipt.id %}" style="margin:0;">
           {% csrf_token %}
-          <button class="btn-primary" type="submit">Contrôler / Valider</button>
+          <button class="btn-primary" type="submit" {% if not can_validate %}disabled{% endif %}>
+            Contrôler / Valider
+          </button>
         </form>
-        <a class="btn-secondary" href="{% url 'receipt_list' %}">← Historique</a>
+
+        <a class="btn-secondary" href="{% url 'shopping_list_detail' receipt.shopping_list.id %}">← Retour liste</a>
+        <a class="btn-secondary" href="{% url 'receipt_list' %}">Historique</a>
       </div>
     </div>
+
+    {% if not can_validate %}
+      <div class="muted mt-10" style="font-size:12px;">
+        {% if receipt.paper_total is None %}
+          • Action : renseigne d’abord le <strong>Total caisse</strong>.
+        {% endif %}
+        {% if missing_actual_count > 0 %}
+          • Action : il reste <strong>{{ missing_actual_count }}</strong> prix réel(s) à saisir.
+        {% endif %}
+      </div>
+    {% endif %}
   </div>
 
-  <div class="card" style="margin-top:12px;">
-    <h2>Lignes</h2>
+  <div class="card mt-12">
+    <h2>Lignes (scan)</h2>
 
     {% if items %}
-      <div style="display:flex; flex-direction:column; gap:10px;">
+      <div class="items-stack">
         {% for it in items %}
-          <div style="border:1px solid rgba(0,0,0,.08); border-radius:10px; padding:12px;">
-            <div class="row" style="justify-content:space-between; align-items:flex-start; gap:12px; flex-wrap:wrap;">
-
-              <div style="min-width:260px; flex:1;">
-                <div style="font-weight:800;">{{ it.position }}. {{ it.name }}</div>
+          <div class="line-card {% if it.actual_price is None %}line-card--missing{% else %}line-card--done{% endif %}">
+            <div class="line-card__inner">
+              <div class="line-main">
+                <div class="line-title">{{ it.position }}. {{ it.name }}</div>
                 <div class="muted" style="margin-top:4px;">
                   Estimé :
                   {% if it.estimated_price is not None %}
@@ -91,26 +118,23 @@
                 </div>
               </div>
 
-              <div style="min-width:320px; flex:0;">
-                <form method="post" action="{% url 'update_receipt_item_price' it.id %}" style="margin:0;">
+              <div class="line-action">
+                <form method="post" action="{% url 'update_receipt_item_price' it.id %}" class="line-form">
                   {% csrf_token %}
-                  <div class="row" style="gap:8px; align-items:center; justify-content:flex-end; flex-wrap:wrap;">
-                    <input name="actual_price" inputmode="decimal" placeholder="Prix réel"
-                           value="{% if it.actual_price is not None %}{{ it.actual_price|floatformat:2 }}{% endif %}"
-                           style="width:140px;">
-                    <button type="submit" class="btn-primary">OK</button>
+                  <input id="actual-{{ it.id }}" name="actual_price" inputmode="decimal" placeholder="Prix réel"
+                         value="{% if it.actual_price is not None %}{{ it.actual_price|floatformat:2 }}{% endif %}"
+                         class="line-input">
+                  <button type="submit" class="btn-primary">OK</button>
 
-                    <div class="pill">
-                      {% if it.actual_price is not None %}
-                        <strong>{{ it.actual_price|floatformat:2 }} €</strong>
-                      {% else %}
-                        <span class="muted">manquant</span>
-                      {% endif %}
-                    </div>
+                  <div class="pill">
+                    {% if it.actual_price is not None %}
+                      <strong>{{ it.actual_price|floatformat:2 }} €</strong>
+                    {% else %}
+                      <span class="muted">manquant</span>
+                    {% endif %}
                   </div>
                 </form>
               </div>
-
             </div>
           </div>
         {% endfor %}
@@ -119,4 +143,31 @@
       <div class="muted">Aucune ligne sur ce ticket.</div>
     {% endif %}
   </div>
+
+  <script>
+    (function(){
+      try {
+        const focusPaper = {% if focus_paper %}true{% else %}false{% endif %};
+        const focusItemId = {% if focus_item_id %}{{ focus_item_id }}{% else %}null{% endif %};
+
+        function focusInput(el){
+          el.classList.add("is-focus-target");
+          el.focus({ preventScroll: true });
+          el.scrollIntoView({ block: "center", behavior: "smooth" });
+          if (el.select) el.select();
+        }
+
+        if (focusPaper) {
+          const el = document.getElementById("paper-total");
+          if (el) return focusInput(el);
+        }
+
+        if (focusItemId) {
+          const el = document.getElementById("actual-" + focusItemId);
+          if (el) return focusInput(el);
+        }
+      } catch(e){}
+    })();
+  </script>
+
 {% endblock %}
