@@ -35,11 +35,11 @@ SECRET_KEY = os.getenv(
 
 
 # DEBUG = os.getenv("DJANGO_DEBUG", "1") in ("1", "True", "true", "yes", "YES")
-DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
+DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"s
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "coursesapp.upidev.com"]
 
-CSRF_TRUSTED_ORIGINS = ["coursesapp.upidev.com"]
+CSRF_TRUSTED_ORIGINS = ["https://coursesapp.upidev.com"]
 
 # =========================================================
 # APPS
