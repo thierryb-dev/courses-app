@@ -35,7 +35,7 @@ SECRET_KEY = os.getenv(
 
 
 # DEBUG = os.getenv("DJANGO_DEBUG", "1") in ("1", "True", "true", "yes", "YES")
-DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"s
+DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
 
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "coursesapp.upidev.com"]
 
