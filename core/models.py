@@ -51,7 +51,7 @@ class Membership(models.Model):
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="memberships")
     household = models.ForeignKey(Household, on_delete=models.CASCADE, related_name="memberships")
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_MEMBER)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_MEMBER, null=True)
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
