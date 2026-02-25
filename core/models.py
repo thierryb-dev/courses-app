@@ -1,53 +1,29 @@
-from __future__ import annotations
-
-from decimal import Decimal, ROUND_HALF_UP
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
-User = settings.AUTH_USER_MODEL
 
 # =========================================================
-# Units
+# Household / Membership
 # =========================================================
-UNIT_UNIT = "unit"
-UNIT_KG = "kg"
-UNIT_G = "g"
-UNIT_L = "l"
-UNIT_ML = "ml"
-UNIT_PACK = "pack"
 
-UNIT_CHOICES = [
-    (UNIT_UNIT, "Unité"),
-    (UNIT_KG, "Kg"),
-    (UNIT_G, "g"),
-    (UNIT_L, "L"),
-    (UNIT_ML, "mL"),
-    (UNIT_PACK, "Pack"),
-]
-
-
-def _format_decimal_human(d: Decimal) -> str:
-    s = format(d.normalize(), "f")
-    if "." in s:
-        s = s.rstrip("0").rstrip(".")
-    return s
-
-
-def _money_2(d: Decimal) -> Decimal:
-    # arrondi bancaire simple, 2 décimales
-    return d.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
-
-
-# =========================================================
-# Core models
-# =========================================================
 class Household(models.Model):
     name = models.CharField(max_length=120)
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="households_created")
-    created_at = models.DateTimeField(default=timezone.now)
 
-    def __str__(self) -> str:
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="created_households",
+        null=True,
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name"]
+
+    def __str__(self):
         return self.name
 
 
@@ -56,155 +32,207 @@ class Membership(models.Model):
     ROLE_MEMBER = "member"
 
     ROLE_CHOICES = [
-        (ROLE_OWNER, "Propriétaire"),
-        (ROLE_MEMBER, "Membre"),
+        (ROLE_OWNER, "Owner"),
+        (ROLE_MEMBER, "Member"),
     ]
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="memberships")
-    household = models.ForeignKey(Household, on_delete=models.CASCADE, related_name="memberships")
-    role = models.CharField(max_length=20, choices=ROLE_CHOICES, default=ROLE_MEMBER, null=True)
-    created_at = models.DateTimeField(default=timezone.now)
+    household = models.ForeignKey(
+        Household,
+        on_delete=models.CASCADE,
+        related_name="memberships",
+    )
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="memberships",
+    )
+
+    role = models.CharField(
+        max_length=20,
+        choices=ROLE_CHOICES,
+        default=ROLE_MEMBER,
+    )
+
+    joined_at = models.DateTimeField(
+        auto_now_add=True,
+        null=True,
+        blank=True,
+    )
 
     class Meta:
-        unique_together = [("user", "household")]
+        unique_together = [("household", "user")]
+        ordering = ["-joined_at"]
 
-    def __str__(self) -> str:
+    def __str__(self):
         return f"{self.user} in {self.household} ({self.role})"
 
 
+# =========================================================
+# Reference (catalog) items with aisle/category
+# =========================================================
+
 class ReferenceItem(models.Model):
     """
-    Catalogue du foyer — Rayons structurés.
+    Catalogue par foyer (liste de référence).
+    Ajout d'un rayon (aisle) pour trier en magasin.
     """
 
-    # 1) Alimentaire
-    AISLE_AL_FRUITS_VEG = "al_fruits_veg"
-    AISLE_AL_BAKERY = "al_bakery"
-    AISLE_AL_STAPLES = "al_staples"
-    AISLE_AL_DAIRY = "al_dairy"
-    AISLE_AL_MEAT = "al_meat"
-    AISLE_AL_FISH = "al_fish"
-    AISLE_AL_GROCERY = "al_grocery"
-    AISLE_AL_READY = "al_ready"
-    AISLE_AL_FROZEN = "al_frozen"
-
-    # 2) Boissons
-    AISLE_DR_SOFT = "dr_soft"
-    AISLE_DR_ALCOHOL = "dr_alcohol"
-
-    # 3) Hygiène & beauté
-    AISLE_HY_BODY = "hy_body"
-    AISLE_HY_DAILY = "hy_daily"
-    AISLE_HY_HAIR = "hy_hair"
-
-    # 4) Non alimentaire
-    AISLE_NF_PROMO = "nf_promo"
+    AISLE_PRODUCE = "produce"     # fruits/légumes
+    AISLE_FRESH = "fresh"         # frais (crèmerie, charcuterie…)
+    AISLE_MEAT_FISH = "meatfish"  # viande/poisson
+    AISLE_GROCERY = "grocery"     # épicerie
+    AISLE_FROZEN = "frozen"       # surgelés
+    AISLE_BAKERY = "bakery"       # boulangerie
+    AISLE_DRINKS = "drinks"       # boissons
+    AISLE_HYGIENE = "hygiene"     # hygiène/beauty
+    AISLE_HOME = "home"           # entretien/maison
+    AISLE_OTHER = "other"         # autres
 
     AISLE_CHOICES = [
-        (AISLE_AL_FRUITS_VEG, "Alimentaire ▸ Fruits & légumes frais"),
-        (AISLE_AL_BAKERY, "Alimentaire ▸ Pains & viennoiseries"),
-        (AISLE_AL_STAPLES, "Alimentaire ▸ Œufs, pâtes, riz, conserves"),
-        (AISLE_AL_DAIRY, "Alimentaire ▸ Produits laitiers & fromages"),
-        (AISLE_AL_MEAT, "Alimentaire ▸ Viandes, charcuteries"),
-        (AISLE_AL_FISH, "Alimentaire ▸ Poissons & produits de la mer"),
-        (AISLE_AL_GROCERY, "Alimentaire ▸ Épicerie salée & sucrerie"),
-        (AISLE_AL_READY, "Alimentaire ▸ Plats préparés & frais réfrigérés"),
-        (AISLE_AL_FROZEN, "Alimentaire ▸ Produits surgelés"),
-        (AISLE_DR_SOFT, "Boissons ▸ Boissons non alcoolisées (eau, sodas, jus…)"),
-        (AISLE_DR_ALCOHOL, "Boissons ▸ Vins, bières, spiritueux"),
-        (AISLE_HY_BODY, "Hygiène & beauté ▸ Soins corporels"),
-        (AISLE_HY_DAILY, "Hygiène & beauté ▸ Hygiène quotidienne"),
-        (AISLE_HY_HAIR, "Hygiène & beauté ▸ Parfums et soins capillaires"),
-        (AISLE_NF_PROMO, "Non alimentaire ▸ Offres hebdomadaires / promotions"),
+        (AISLE_PRODUCE, "Fruits & légumes"),
+        (AISLE_FRESH, "Frais"),
+        (AISLE_MEAT_FISH, "Viande & poisson"),
+        (AISLE_GROCERY, "Épicerie"),
+        (AISLE_FROZEN, "Surgelés"),
+        (AISLE_BAKERY, "Boulangerie"),
+        (AISLE_DRINKS, "Boissons"),
+        (AISLE_HYGIENE, "Hygiène"),
+        (AISLE_HOME, "Maison"),
+        (AISLE_OTHER, "Autres"),
     ]
 
-    household = models.ForeignKey(Household, on_delete=models.CASCADE, related_name="reference_items")
-    name = models.CharField(max_length=140)
-    aisle = models.CharField(max_length=40, choices=AISLE_CHOICES, default=AISLE_AL_FRUITS_VEG)
+    AISLE_ORDER = {
+        AISLE_PRODUCE: 10,
+        AISLE_FRESH: 20,
+        AISLE_MEAT_FISH: 30,
+        AISLE_GROCERY: 40,
+        AISLE_FROZEN: 50,
+        AISLE_BAKERY: 60,
+        AISLE_DRINKS: 70,
+        AISLE_HYGIENE: 80,
+        AISLE_HOME: 90,
+        AISLE_OTHER: 999,
+    }
 
-    default_qty_value = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
-    default_unit = models.CharField(max_length=20, choices=UNIT_CHOICES, default=UNIT_UNIT)
-    default_note = models.CharField(max_length=200, blank=True, default="")
+    household = models.ForeignKey(
+        Household,
+        on_delete=models.CASCADE,
+        related_name="reference_items",
+    )
 
-    # ✅ NEW: prix unitaire (dans l’unité choisie : €/kg, €/L, €/unité…)
-    default_unit_price = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
+    name = models.CharField(max_length=160)
+    aisle = models.CharField(max_length=20, choices=AISLE_CHOICES, default=AISLE_GROCERY)
+
+    default_quantity = models.CharField(max_length=50, blank=True)
+    default_note = models.CharField(max_length=255, blank=True)
 
     is_active = models.BooleanField(default=True)
-    is_selected = models.BooleanField(default=False)
-    created_at = models.DateTimeField(default=timezone.now)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="created_reference_items",
+        null=True,
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["name"]
+        unique_together = [("household", "name")]
+
+    def __str__(self):
+        return f"{self.name} ({self.household})"
+
+    @property
+    def aisle_rank(self) -> int:
+        return self.AISLE_ORDER.get(self.aisle, 999)
+
+
+# =========================================================
+# Shopping Lists
+# =========================================================
+
+class ShoppingList(models.Model):
+    household = models.ForeignKey(
+        Household,
+        on_delete=models.CASCADE,
+        related_name="shopping_lists",
+    )
+
+    name = models.CharField(max_length=120)
+
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="created_shopping_lists",
+        null=True,
+        blank=True,
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         unique_together = [("household", "name")]
+        ordering = ["-created_at"]
 
-    def __str__(self) -> str:
-        return self.name
-
-    @property
-    def unit_label(self) -> str:
-        return dict(UNIT_CHOICES).get(self.default_unit, self.default_unit)
-
-    @property
-    def quantity_label(self) -> str:
-        unit = self.unit_label
-        if self.default_qty_value is None:
-            return unit
-        return f"{_format_decimal_human(self.default_qty_value)} {unit}"
-
-    def compute_default_total(self) -> Decimal | None:
-        """
-        Total estimé (qté × prix unitaire) si possible.
-        """
-        if self.default_unit_price is None:
-            return None
-        qty = self.default_qty_value if self.default_qty_value is not None else Decimal("1")
-        return _money_2(qty * self.default_unit_price)
-
-
-class ShoppingList(models.Model):
-    household = models.ForeignKey(Household, on_delete=models.CASCADE, related_name="shopping_lists")
-    name = models.CharField(max_length=120, default="Liste magasin")
-    created_at = models.DateTimeField(default=timezone.now)
-    closed_at = models.DateTimeField(null=True, blank=True)
-
-    def __str__(self) -> str:
-        status = "ouverte" if self.closed_at is None else "clôturée"
-        return f"{self.household.name} — {self.name} ({status})"
-
-    @property
-    def is_open(self) -> bool:
-        return self.closed_at is None
+    def __str__(self):
+        return f"{self.name} ({self.household})"
 
 
 class ListItem(models.Model):
-    shopping_list = models.ForeignKey(ShoppingList, on_delete=models.CASCADE, related_name="items")
-    name = models.CharField(max_length=140)
-    aisle = models.CharField(
-        max_length=40,
-        choices=ReferenceItem.AISLE_CHOICES,
-        default=ReferenceItem.AISLE_AL_FRUITS_VEG,
+    shopping_list = models.ForeignKey(
+        ShoppingList,
+        on_delete=models.CASCADE,
+        related_name="items",
     )
 
-    qty_value = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
-    unit = models.CharField(max_length=20, choices=UNIT_CHOICES, default=UNIT_UNIT)
-    note = models.CharField(max_length=200, blank=True, default="")
+    # lien optionnel vers le catalogue
+    reference_item = models.ForeignKey(
+        ReferenceItem,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="list_items",
+    )
+
+    # snapshot (indépendant du catalogue)
+    name = models.CharField(max_length=160)
+    aisle = models.CharField(max_length=20, choices=ReferenceItem.AISLE_CHOICES, default=ReferenceItem.AISLE_GROCERY)
+    quantity = models.CharField(max_length=50, blank=True)
+    note = models.CharField(max_length=255, blank=True)
 
     is_checked = models.BooleanField(default=False)
+
     checked_at = models.DateTimeField(null=True, blank=True)
-    checked_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="checked_list_items")
 
-    # ✅ NEW: prix unitaire estimé
-    unit_price = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
+    checked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="checked_list_items",
+    )
 
-    # ✅ On conserve ce champ comme "prix total estimé" (compatibilité UI/Receipt)
-    estimated_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="created_list_items",
+        null=True,
+        blank=True,
+    )
 
-    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="list_items_created")
-    created_at = models.DateTimeField(default=timezone.now)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    def __str__(self) -> str:
+    class Meta:
+        ordering = ["is_checked", "-created_at"]
+
+    def __str__(self):
         return self.name
 
-    def set_checked(self, user, checked: bool) -> None:
+    def set_checked(self, user, checked: bool):
         self.is_checked = checked
         if checked:
             self.checked_at = timezone.now()
@@ -212,80 +240,3 @@ class ListItem(models.Model):
         else:
             self.checked_at = None
             self.checked_by = None
-
-    @property
-    def unit_label(self) -> str:
-        return dict(UNIT_CHOICES).get(self.unit, self.unit)
-
-    @property
-    def quantity_label(self) -> str:
-        unit = self.unit_label
-        if self.qty_value is None:
-            return unit
-        return f"{_format_decimal_human(self.qty_value)} {unit}"
-
-    def compute_total(self) -> Decimal | None:
-        if self.unit_price is None:
-            return None
-        qty = self.qty_value if self.qty_value is not None else Decimal("1")
-        return _money_2(qty * self.unit_price)
-
-    def recompute_estimated_price(self) -> None:
-        """
-        Synchronise estimated_price avec qty × unit_price.
-        """
-        total = self.compute_total()
-        self.estimated_price = total
-
-
-class Receipt(models.Model):
-    household = models.ForeignKey(Household, on_delete=models.CASCADE, related_name="receipts")
-    shopping_list = models.OneToOneField(ShoppingList, on_delete=models.CASCADE, related_name="receipt")
-
-    store_name = models.CharField(max_length=160, blank=True, default="")
-    purchased_at = models.DateTimeField(default=timezone.now)
-
-    paper_total = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    created_at = models.DateTimeField(default=timezone.now)
-
-    def __str__(self) -> str:
-        return f"Receipt #{self.id} — {self.household.name}"
-
-    @property
-    def estimated_total(self) -> Decimal:
-        s = Decimal("0.00")
-        for it in self.items.all():
-            if it.estimated_price is not None:
-                s += it.estimated_price
-        return s
-
-    @property
-    def actual_total(self) -> Decimal:
-        s = Decimal("0.00")
-        for it in self.items.all():
-            if it.actual_price is not None:
-                s += it.actual_price
-        return s
-
-    @property
-    def missing_actual_count(self) -> int:
-        return sum(1 for it in self.items.all() if it.actual_price is None)
-
-
-class ReceiptItem(models.Model):
-    receipt = models.ForeignKey(Receipt, on_delete=models.CASCADE, related_name="items")
-    list_item = models.OneToOneField(ListItem, on_delete=models.CASCADE, related_name="receipt_line")
-
-    position = models.PositiveIntegerField(default=1)
-    name = models.CharField(max_length=140)
-
-    estimated_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-    actual_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
-
-    created_at = models.DateTimeField(default=timezone.now)
-
-    class Meta:
-        ordering = ["position", "id"]
-
-    def __str__(self) -> str:
-        return f"{self.position}. {self.name}"
