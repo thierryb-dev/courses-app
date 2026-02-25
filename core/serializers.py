@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Household, Membership, ShoppingList, ListItem
+from .models import Household, Membership, ShoppingList, ListItem, ReferenceItem
 
 
 class HouseholdSerializer(serializers.ModelSerializer):
@@ -16,6 +16,24 @@ class MembershipSerializer(serializers.ModelSerializer):
         read_only_fields = ["created_at"]
 
 
+class ReferenceItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = ReferenceItem
+        fields = [
+            "id",
+            "household",
+            "name",
+            "aisle",
+            "default_qty_value",
+            "default_unit",
+            "default_note",
+            "is_active",
+            "is_selected",
+            "created_at",
+        ]
+        read_only_fields = ["created_at"]
+
+
 class ListItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = ListItem
@@ -24,7 +42,8 @@ class ListItemSerializer(serializers.ModelSerializer):
             "shopping_list",
             "name",
             "aisle",
-            "quantity",
+            "qty_value",
+            "unit",
             "note",
             "is_checked",
             "checked_at",

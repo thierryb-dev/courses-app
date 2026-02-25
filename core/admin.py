@@ -20,7 +20,6 @@ class HouseholdAdmin(admin.ModelAdmin):
 
 @admin.register(Membership)
 class MembershipAdmin(admin.ModelAdmin):
-    # ✅ joined_at n'existe pas -> created_at
     list_display = ("id", "household", "user", "role", "created_at")
     list_filter = ("role",)
     search_fields = ("household__name", "user__username", "user__email")
@@ -30,8 +29,18 @@ class MembershipAdmin(admin.ModelAdmin):
 
 @admin.register(ReferenceItem)
 class ReferenceItemAdmin(admin.ModelAdmin):
-    list_display = ("id", "household", "name", "aisle", "is_active", "is_selected", "created_at")
-    list_filter = ("aisle", "is_active", "is_selected")
+    list_display = (
+        "id",
+        "household",
+        "name",
+        "aisle",
+        "default_qty_value",
+        "default_unit",
+        "is_active",
+        "is_selected",
+        "created_at",
+    )
+    list_filter = ("aisle", "default_unit", "is_active", "is_selected")
     search_fields = ("name", "household__name")
     list_select_related = ("household",)
     ordering = ("household__name", "aisle", "name")
@@ -39,7 +48,6 @@ class ReferenceItemAdmin(admin.ModelAdmin):
 
 @admin.register(ShoppingList)
 class ShoppingListAdmin(admin.ModelAdmin):
-    # ✅ ShoppingList n'a pas created_by
     list_display = ("id", "household", "name", "created_at")
     search_fields = ("household__name", "name")
     list_select_related = ("household",)
@@ -54,11 +62,13 @@ class ListItemAdmin(admin.ModelAdmin):
         "name",
         "aisle",
         "is_checked",
+        "qty_value",
+        "unit",
         "estimated_price",
         "created_by",
         "created_at",
     )
-    list_filter = ("aisle", "is_checked")
+    list_filter = ("aisle", "unit", "is_checked")
     search_fields = ("name", "shopping_list__household__name")
     list_select_related = ("shopping_list", "created_by")
     ordering = ("-created_at",)
@@ -66,7 +76,6 @@ class ListItemAdmin(admin.ModelAdmin):
 
 @admin.register(Receipt)
 class ReceiptAdmin(admin.ModelAdmin):
-    # ✅ total_amount n'existe plus -> paper_total + méthodes calculées
     list_display = (
         "id",
         "household",
@@ -74,27 +83,12 @@ class ReceiptAdmin(admin.ModelAdmin):
         "store_name",
         "purchased_at",
         "paper_total",
-        "estimated_total_admin",
-        "actual_total_admin",
-        "missing_actual_count_admin",
         "created_at",
     )
     list_filter = ("purchased_at",)
     search_fields = ("household__name", "store_name")
     list_select_related = ("household", "shopping_list")
     ordering = ("-purchased_at",)
-
-    @admin.display(description="Total estimé (€)")
-    def estimated_total_admin(self, obj: Receipt):
-        return obj.estimated_total
-
-    @admin.display(description="Total réel saisi (€)")
-    def actual_total_admin(self, obj: Receipt):
-        return obj.actual_total
-
-    @admin.display(description="Prix réels manquants")
-    def missing_actual_count_admin(self, obj: Receipt):
-        return obj.missing_actual_count
 
 
 @admin.register(ReceiptItem)

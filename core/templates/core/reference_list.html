@@ -2,81 +2,161 @@
 {% block title %}Catalogue — {{ household.name }}{% endblock %}
 
 {% block content %}
-  <div class="row" style="justify-content:space-between;">
+  <div class="row" style="justify-content:space-between; align-items:flex-end;">
     <div>
-      <h1>Catalogue</h1>
-      <div class="muted">{{ household.name }} — Sélectionne puis génère la liste magasin.</div>
+      <h1>Catalogue — {{ household.name }}</h1>
+      <div class="muted">
+        Actifs : <strong>{{ active_count }}</strong> •
+        À acheter : <strong>{{ selected_count }}</strong>
+      </div>
     </div>
-    <div class="kpi">
-      <div class="pill"><strong>{{ selected_count }}</strong> sélectionné(s)</div>
-      <form method="post" action="{% url 'generate_shopping_list_from_reference' household.id %}">
+
+    <div class="row" style="gap:10px;">
+      <form method="post" action="{% url 'reference_clear_selected' household.id %}" style="margin:0;">
         {% csrf_token %}
-        <button class="btn-primary" type="submit" {% if selected_count == 0 %}disabled{% endif %}>
-          Générer la liste
-        </button>
+        <button class="btn-secondary" type="submit">Vider “À acheter”</button>
+      </form>
+
+      <form method="post" action="{% url 'generate_shopping_list_from_reference' household.id %}" style="margin:0;">
+        {% csrf_token %}
+        <button class="btn-primary" type="submit">Générer la liste magasin</button>
       </form>
     </div>
   </div>
 
-  <div class="card">
+  <div class="card mt-12">
     <h2>Ajouter un produit</h2>
     <form method="post">
       {% csrf_token %}
-      <div class="row">
-        <input name="name" placeholder="Produit (ex : Pâtes)" required style="flex:1; min-width:220px;">
-        <select name="aisle">
+      <div class="row" style="gap:8px; flex-wrap:wrap; align-items:center;">
+        <input name="name" placeholder="Ex : Lait" required style="flex:1; min-width:220px;">
+
+        <select name="aisle" style="min-width:260px;">
           {% for k, label in aisle_choices %}
             <option value="{{ k }}">{{ label }}</option>
           {% endfor %}
         </select>
-        <input name="default_quantity" placeholder="Qté (ex : 2)" style="width:160px;">
-        <input name="default_note" placeholder="Note (ex : sans gluten)" style="flex:1; min-width:200px;">
+
+        <input name="default_qty_value" placeholder="Qté défaut" inputmode="decimal" style="width:130px;">
+        <select name="default_unit" style="min-width:140px;">
+          {% for k, label in unit_choices %}
+            <option value="{{ k }}">{{ label }}</option>
+          {% endfor %}
+        </select>
+
+        <input name="default_unit_price" placeholder="Prix unitaire" inputmode="decimal" style="width:150px;">
+
+        <input name="default_note" placeholder="Note (optionnel)" style="flex:1; min-width:220px;">
         <button class="btn-primary" type="submit">Ajouter</button>
+      </div>
+      <div class="muted mt-8" style="font-size:12px;">
+        Le prix unitaire est dans l’unité choisie (ex : €/kg si unité = Kg).
       </div>
     </form>
   </div>
 
-  <div class="card">
-    <div class="row" style="justify-content:space-between;">
-      <h2>Produits</h2>
+  <div class="card mt-12">
+    <h2>Produits</h2>
 
-      <form method="post" action="{% url 'reference_clear_selected' household.id %}">
-        {% csrf_token %}
-        <button type="submit">Vider sélection</button>
-      </form>
-    </div>
+    {% if items %}
+      <div class="items-stack">
+        {% for it in items %}
+          <div class="item-card {% if not it.is_active %}item-card--checked{% endif %}">
+            <div class="item-card__inner" style="align-items:flex-start;">
 
-    <ul class="list">
-      {% for it in items %}
-        <li>
-          <div class="row" style="justify-content:space-between;">
-            <div>
-              <div style="font-weight:800;">{{ it.name }}</div>
-              <div class="muted">{{ it.get_aisle_display }}{% if it.default_quantity %} • {{ it.default_quantity }}{% endif %}{% if it.default_note %} • {{ it.default_note }}{% endif %}</div>
-            </div>
+              <div style="flex:1;">
+                <div class="row" style="justify-content:space-between; align-items:center;">
+                  <div class="item-title">{{ it.name }}</div>
 
-            <div class="row">
-              <form method="post" action="{% url 'reference_toggle_selected' it.id %}">
-                {% csrf_token %}
-                <button type="submit" {% if not it.is_active %}disabled{% endif %}>
-                  {% if it.is_selected %}✓ Sélectionné{% else %}+ Sélectionner{% endif %}
-                </button>
-              </form>
+                  <div class="row" style="gap:8px;">
+                    <span class="pill">{{ it.get_aisle_display }}</span>
+                    {% if it.is_selected and it.is_active %}
+                      <span class="pill pill-ok">À acheter</span>
+                    {% endif %}
+                    {% if not it.is_active %}
+                      <span class="pill pill-warn">Archivé</span>
+                    {% endif %}
+                  </div>
+                </div>
 
-              <form method="post" action="{% url 'reference_toggle_active' it.id %}">
-                {% csrf_token %}
-                {% if it.is_active %}
-                  <button class="btn-danger" type="submit">Désactiver</button>
-                {% else %}
-                  <button type="submit">Activer</button>
+                <div class="muted mt-8">
+                  Quantité défaut : <strong>{{ it.quantity_label }}</strong>
+                  • Prix unitaire :
+                  {% if it.default_unit_price is not None %}
+                    <strong>{{ it.default_unit_price }}</strong>
+                  {% else %}
+                    —
+                  {% endif %}
+                  • Total défaut :
+                  {% if it.compute_default_total %}
+                    <strong>{{ it.compute_default_total|floatformat:2 }} €</strong>
+                  {% else %}
+                    —
+                  {% endif %}
+                </div>
+
+                {% if it.default_note %}
+                  <div class="item-note">📝 {{ it.default_note }}</div>
                 {% endif %}
-              </form>
+
+                <div class="mt-10">
+                  <form method="post" action="{% url 'reference_update_details' it.id %}" class="row" style="gap:8px; flex-wrap:wrap;">
+                    {% csrf_token %}
+
+                    <input name="default_qty_value" value="{{ it.default_qty_value }}" placeholder="Qté" style="width:120px;" inputmode="decimal">
+
+                    <select name="default_unit" style="min-width:140px;">
+                      {% for k,label in unit_choices %}
+                        <option value="{{ k }}" {% if it.default_unit == k %}selected{% endif %}>{{ label }}</option>
+                      {% endfor %}
+                    </select>
+
+                    <input name="default_unit_price" value="{{ it.default_unit_price }}" placeholder="Prix unitaire" style="width:150px;" inputmode="decimal">
+
+                    <select name="aisle" style="min-width:260px;">
+                      {% for k,label in aisle_choices %}
+                        <option value="{{ k }}" {% if it.aisle == k %}selected{% endif %}>{{ label }}</option>
+                      {% endfor %}
+                    </select>
+
+                    <input name="default_note" value="{{ it.default_note }}" placeholder="Note" style="flex:1; min-width:220px;">
+
+                    <button class="btn-primary" type="submit">Mettre à jour</button>
+                  </form>
+                </div>
+              </div>
+
+              <div class="row" style="gap:8px; flex-wrap:wrap;">
+                <form method="post" action="{% url 'reference_toggle_selected' it.id %}" style="margin:0;">
+                  {% csrf_token %}
+                  <button class="{% if it.is_selected %}btn-secondary{% else %}btn-primary{% endif %}" type="submit" {% if not it.is_active %}disabled{% endif %}>
+                    {% if it.is_selected %}Retirer{% else %}À acheter{% endif %}
+                  </button>
+                </form>
+
+                <form method="post" action="{% url 'reference_toggle_active' it.id %}" style="margin:0;">
+                  {% csrf_token %}
+                  <button class="btn-secondary" type="submit">
+                    {% if it.is_active %}Archiver{% else %}Réactiver{% endif %}
+                  </button>
+                </form>
+
+                <form method="post" action="{% url 'reference_delete' it.id %}" style="margin:0;">
+                  {% csrf_token %}
+                  <button class="btn-danger" type="submit">Supprimer</button>
+                </form>
+              </div>
+
             </div>
           </div>
-        </li>
-      {% empty %}
-        <li class="muted">Aucun produit dans le catalogue.</li>
-      {% endfor %}
-    </ul>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="muted">Catalogue vide.</div>
+    {% endif %}
+  </div>
+
+  <div class="mt-10">
+    <a class="btn-secondary" href="{% url 'my_households' %}">← Retour foyers</a>
   </div>
 {% endblock %}

@@ -1,11 +1,10 @@
-# core/views_receipt.py
 from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
 
 from django.contrib import messages
-from django.contrib.auth.decorators import login_required
 from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth.decorators import login_required
 from django.db import transaction
 from django.http import Http404, HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -32,11 +31,7 @@ def _user_receipt_or_404(user, receipt_id: int) -> Receipt:
 
 
 def _enrich_receipt_for_ui(r: Receipt) -> Receipt:
-    """
-    Attache des attributs calculés directement sur l'instance (utiles en template),
-    en supposant que items est prefetch dans la liste.
-    """
-    r.lines_count = len(r.items.all())  # évite COUNT(*)
+    r.lines_count = len(r.items.all())
     r.actual_total_ui = r.actual_total
     r.estimated_total_ui = r.estimated_total
 
@@ -50,7 +45,6 @@ def _enrich_receipt_for_ui(r: Receipt) -> Receipt:
 
 @login_required
 def receipt_list(request: HttpRequest) -> HttpResponse:
-    """Historique des tickets (tous foyers où l'utilisateur est membre)."""
     qs = (
         Receipt.objects.filter(household__memberships__user=request.user)
         .select_related("household", "shopping_list")
@@ -65,14 +59,12 @@ def receipt_list(request: HttpRequest) -> HttpResponse:
 @login_required
 @require_POST
 def create_receipt(request: HttpRequest, shopping_list_id: int) -> HttpResponse:
-    """À la caisse : crée un ticket à partir des items cochés ✅ de la liste ouverte."""
     shopping_list = _user_list_or_404(request.user, shopping_list_id)
 
     if shopping_list.closed_at is not None:
         messages.error(request, "Cette liste est clôturée. Démarre une nouvelle session.")
         return redirect("shopping_lists")
 
-    # OneToOne reverse
     try:
         existing = shopping_list.receipt
         return redirect("receipt_detail", receipt_id=existing.id)
@@ -102,7 +94,6 @@ def create_receipt(request: HttpRequest, shopping_list_id: int) -> HttpResponse:
                     position=pos,
                     name=it.name,
                     estimated_price=it.estimated_price,
-                    # ✅ DEMANDE : par défaut, prix réel = prix saisi en magasin
                     actual_price=it.estimated_price,
                 )
             )
@@ -131,6 +122,16 @@ def receipt_detail(request: HttpRequest, receipt_id: int) -> HttpResponse:
         delta = actual_total - paper_total
         ok = abs(delta) <= TOLERANCE
 
+    missing_actual_count = receipt.missing_actual_count
+    filled_actual_count = len([i for i in items if i.actual_price is not None])
+    can_validate = (paper_total is not None) and (missing_actual_count == 0)
+
+    focus_paper = paper_total is None
+    focus_item_id = None
+    if not focus_paper:
+        missing = next((i for i in items if i.actual_price is None), None)
+        focus_item_id = missing.id if missing else None
+
     return render(
         request,
         "core/receipt_detail.html",
@@ -143,6 +144,12 @@ def receipt_detail(request: HttpRequest, receipt_id: int) -> HttpResponse:
             "delta": delta,
             "ok": ok,
             "tolerance": TOLERANCE,
+            "missing_actual_count": missing_actual_count,
+            "filled_actual_count": filled_actual_count,
+            "lines_count": len(items),
+            "can_validate": can_validate,
+            "focus_paper": focus_paper,
+            "focus_item_id": focus_item_id,
         },
     )
 
@@ -158,12 +165,11 @@ def update_receipt_header(request: HttpRequest, receipt_id: int) -> HttpResponse
 
     receipt.store_name = store_name
 
-    # timezone.make_aware() sur datetime-local (naïf)
     if purchased_at_raw:
         try:
             from datetime import datetime
 
-            dt = datetime.fromisoformat(purchased_at_raw)  # "YYYY-MM-DDTHH:MM"
+            dt = datetime.fromisoformat(purchased_at_raw)
             if timezone.is_naive(dt):
                 dt = timezone.make_aware(dt, timezone.get_current_timezone())
             receipt.purchased_at = dt
@@ -208,7 +214,6 @@ def update_receipt_item_price(request: HttpRequest, item_id: int) -> HttpRespons
 @login_required
 @require_POST
 def validate_receipt(request: HttpRequest, receipt_id: int) -> HttpResponse:
-    """Contrôle : somme des prix réels vs total caisse. Si OK, clôture la liste."""
     receipt = _user_receipt_or_404(request.user, receipt_id)
 
     if receipt.paper_total is None:
@@ -238,24 +243,14 @@ def validate_receipt(request: HttpRequest, receipt_id: int) -> HttpResponse:
     return redirect("receipt_detail", receipt_id=receipt.id)
 
 
-# ==========================================
-# Purge (STAFF) : supprimer tous les tickets
-# ==========================================
-
 @staff_member_required
 def receipt_purge_confirm(request: HttpRequest) -> HttpResponse:
-    """
-    Page de confirmation + POST pour supprimer TOUS les tickets.
-    Visible uniquement pour les comptes staff.
-    """
     receipts_count = Receipt.objects.count()
     items_count = ReceiptItem.objects.count()
 
     if request.method == "POST":
         with transaction.atomic():
-            # Supprime ReceiptItem via cascade, mais on peut supprimer directement Receipt
             Receipt.objects.all().delete()
-
         messages.success(request, "Tous les tickets ont été supprimés.")
         return redirect("receipt_list")
 

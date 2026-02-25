@@ -1,27 +1,22 @@
 """
 Django settings for config project.
 
-Objectifs de cette config:
-- Simple en dev (DEBUG via env)
-- Propre en prod (collectstatic vers STATIC_ROOT)
+Objectifs:
+- DEBUG piloté via env
+- Static OK en dev et en prod (WhiteNoise)
 - Templates trouvés dans:
     - core/templates/... (APP_DIRS=True)
     - templates/ à la racine projet (DIRS=[BASE_DIR/"templates"])
-- Static trouvés dans:
-    - core/static/... (recommandé)
-    - (optionnel) static/ à la racine projet si tu actives STATICFILES_DIRS
 """
 
 from pathlib import Path
 import os
 
-# Optionnel mais pratique: pip install python-dotenv
 from dotenv import load_dotenv
 
 load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # =========================================================
 # SECURITY
@@ -29,18 +24,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv(
     "DJANGO_SECRET_KEY",
-    # ⚠️ Valeur par défaut ok en dev, mais en prod mets une vraie key via env
     "django-insecure-anzbmd&37%gu6k!&rx@f%gjc$8gk$0=*w=d3tu=(%u(hu+d))7",
 )
 
-
-# DEBUG = os.getenv("DJANGO_DEBUG", "1") in ("1", "True", "true", "yes", "YES")
+# ✅ DEBUG contrôlé par variable d'env (ne pas forcer en dur)
 DEBUG = os.getenv("DJANGO_DEBUG", "False") == "True"
 
-DEBUG = False
-
 ALLOWED_HOSTS = ["localhost", "127.0.0.1", "coursesapp.upidev.com"]
-
 CSRF_TRUSTED_ORIGINS = ["https://coursesapp.upidev.com"]
 
 # =========================================================
@@ -57,13 +47,16 @@ INSTALLED_APPS = [
     "core",
 ]
 
-
 # =========================================================
 # MIDDLEWARE
 # =========================================================
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+
+    # ✅ WhiteNoise: sert les static en prod (et gère cache + compression)
+    "whitenoise.middleware.WhiteNoiseMiddleware",
+
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -72,14 +65,12 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
-
 # =========================================================
 # URLS / WSGI
 # =========================================================
 
 ROOT_URLCONF = "config.urls"
 WSGI_APPLICATION = "config.wsgi.application"
-
 
 # =========================================================
 # TEMPLATES
@@ -88,10 +79,7 @@ WSGI_APPLICATION = "config.wsgi.application"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        # ✅ Recommandé: templates globaux projet (optionnel)
-        # Tu peux y mettre un layout global, emails, etc.
         "DIRS": [BASE_DIR / "templates"],
-        # ✅ Indispensable pour trouver core/templates/core/*.html
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -104,12 +92,9 @@ TEMPLATES = [
     },
 ]
 
-
 # =========================================================
 # DATABASE
 # =========================================================
-# Config PostgreSQL (comme ton fichier actuel)
-# En dev si tu veux SQLite, je peux aussi te donner une variante.
 
 DATABASES = {
     "default": {
@@ -123,7 +108,6 @@ DATABASES = {
     }
 }
 
-
 # =========================================================
 # AUTH PASSWORD VALIDATION
 # =========================================================
@@ -135,7 +119,6 @@ AUTH_PASSWORD_VALIDATORS = [
     {"NAME": "django.contrib.auth.password_validation.NumericPasswordValidator"},
 ]
 
-
 # =========================================================
 # I18N / TZ
 # =========================================================
@@ -145,25 +128,20 @@ TIME_ZONE = "Europe/Paris"
 USE_I18N = True
 USE_TZ = True
 
-
 # =========================================================
 # STATIC FILES (CSS / IMAGES / JS)
 # =========================================================
-# ✅ Pour ton "super design", on recommande:
-# - mettre ton CSS dans: core/static/core/css/app.css
-# - et le charger dans base.html avec:
-#   {% load static %}
-#   <link rel="stylesheet" href="{% static 'core/css/app.css' %}">
 
 STATIC_URL = "/static/"
 
-# ✅ En prod: collectstatic va copier toutes les static ici
+# ✅ En prod: collectstatic copie tout ici
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Optionnel: si tu as UN DOSSIER static/ à la racine du projet (en plus de core/static)
-# Décommente:
-# STATICFILES_DIRS = [BASE_DIR / "static"]
+# ✅ WhiteNoise storage (cache-busting via hash)
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
 
+# (Optionnel) Si tu as un dossier static/ à la racine du projet:
+# STATICFILES_DIRS = [BASE_DIR / "static"]
 
 # =========================================================
 # DEFAULT AUTO FIELD
@@ -171,12 +149,10 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
-
 # =========================================================
 # AUTH / LOGIN
 # =========================================================
-# Si tu utilises l'admin pour te connecter, OK.
-# Si tu fais un login custom plus tard, on changera ça.
 
 LOGIN_URL = "/admin/login/"
 LOGIN_REDIRECT_URL = "/"
+# "django.contrib.admin",

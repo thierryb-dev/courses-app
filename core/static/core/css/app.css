@@ -1,556 +1,558 @@
 /* ==========================================================================
-   app.css — Version premium structurée
-   - Design system (tokens)
-   - Composants (cards, pills, buttons, forms)
-   - Pages : Shopping list (focus prix), Ticket (mode scan)
-   - Responsive + accessibilité (focus-visible)
+   Courses App — app.css (Hyper complet & optimisé utilisateur)
+   - Thème sombre accessible
+   - UI lisible (famille / téléphone)
+   - Fix dropdown Windows (options invisibles)
+   - Mise en évidence Produits + Rayons
    ========================================================================== */
 
+/* =========================
+   1) Design tokens
+   ========================= */
 :root{
+  /* Surfaces */
   --bg: #0b0d12;
-  --panel: rgba(255,255,255,0.06);
-  --panel-2: rgba(255,255,255,0.10);
-  --border: rgba(255,255,255,0.12);
+  --bg2: #0f1420;
+  --card: rgba(255,255,255,0.06);
+  --card2: rgba(255,255,255,0.04);
+
+  /* Borders / hairlines */
+  --border: rgba(255,255,255,0.10);
+  --border2: rgba(255,255,255,0.14);
+
+  /* Text */
   --text: rgba(255,255,255,0.92);
   --muted: rgba(255,255,255,0.62);
+  --muted2: rgba(255,255,255,0.42);
 
-  --brand: #7c5cff;
-  --brand-2: #31d0aa;
-  --danger: #ff4d6d;
-  --success: #31d0aa;
-  --warning: #ffb020;
+  /* Brand */
+  --primary: #7c5cff;
+  --primary2: #3b82f6;
 
-  --shadow: 0 18px 60px rgba(0,0,0,0.55);
-  --shadow-soft: 0 10px 30px rgba(0,0,0,0.35);
-  --radius: 16px;
-  --radius-sm: 14px;
+  /* Status */
+  --success: #22c55e;
+  --danger: #ef4444;
+  --warn: #f59e0b;
+  --info: #38bdf8;
+
+  /* Shadows */
+  --shadow-1: 0 8px 20px rgba(0,0,0,0.28);
+  --shadow-2: 0 14px 34px rgba(0,0,0,0.36);
+
+  /* Radius */
+  --r-1: 12px;
+  --r-2: 16px;
+  --r-3: 20px;
+
+  /* Spacing */
+  --gap-1: 8px;
+  --gap-2: 12px;
+  --gap-3: 16px;
+  --gap-4: 20px;
+
+  /* Typography */
+  --fs-1: 0.86rem;
+  --fs-2: 0.95rem;
+  --fs-3: 1.05rem;
+  --fs-4: 1.28rem;
+  --fs-5: 1.55rem;
+
+  /* Focus */
+  --focus: rgba(124,92,255,0.55);
+  --focus-ring: 0 0 0 4px rgba(124,92,255,0.18);
+
+  /* Controls */
+  --control-bg: rgba(255,255,255,0.05);
+  --control-bg-hover: rgba(255,255,255,0.07);
+  --control-border: rgba(255,255,255,0.14);
 }
 
-/* =========================
-   Base / Reset
-   ========================= */
-*{ box-sizing:border-box; }
-html,body{ height:100%; }
+/* Optional: better rendering */
+html{
+  -webkit-text-size-adjust: 100%;
+  text-rendering: optimizeLegibility;
+}
+
+*{ box-sizing: border-box; }
 
 body{
   margin:0;
-  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial, "Apple Color Emoji","Segoe UI Emoji";
+  min-height: 100vh;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   background:
-    radial-gradient(1200px 800px at 20% -10%, rgba(124,92,255,0.25), transparent 60%),
-    radial-gradient(1000px 600px at 90% 0%, rgba(49,208,170,0.18), transparent 55%),
-    radial-gradient(900px 700px at 30% 120%, rgba(255,176,32,0.10), transparent 60%),
-    var(--bg);
-  color:var(--text);
-}
-
-a{ color:inherit; text-decoration:none; }
-a:hover{ text-decoration:underline; }
-
-.container{
-  max-width: 1040px;
-  margin: 0 auto;
-  padding: 22px 14px 48px;
-}
-
-/* =========================
-   Topbar
-   ========================= */
-.topbar{
-  position: sticky;
-  top:0;
-  z-index: 50;
-  backdrop-filter: blur(14px);
-  background: rgba(11,13,18,0.65);
-  border-bottom: 1px solid var(--border);
-}
-
-.topbar-inner{
-  max-width: 1040px;
-  margin:0 auto;
-  padding: 14px 14px;
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap: 14px;
-}
-
-.brand{
-  display:flex;
-  align-items:center;
-  gap:10px;
-  font-weight: 800;
-  letter-spacing: 0.2px;
-}
-
-.nav{
-  display:flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.nav a{
-  padding: 8px 10px;
-  border: 1px solid transparent;
-  border-radius: 12px;
-  color: var(--muted);
-}
-.nav a:hover{
+    radial-gradient(1200px 700px at 20% 0%, rgba(124,92,255,0.18), transparent 55%),
+    radial-gradient(900px 600px at 85% 10%, rgba(59,130,246,0.14), transparent 55%),
+    linear-gradient(180deg, var(--bg), var(--bg2));
   color: var(--text);
-  border-color: var(--border);
-  text-decoration:none;
-  background: rgba(255,255,255,0.04);
+  line-height: 1.35;
+}
+
+/* Links */
+a{
+  color: rgba(255,255,255,0.90);
+  text-decoration: none;
+}
+a:hover{ text-decoration: underline; }
+a:focus-visible{
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: 8px;
 }
 
 /* =========================
-   Typography
+   2) Layout helpers
    ========================= */
-h1,h2,h3{
-  margin: 0 0 12px 0;
-  letter-spacing: -0.02em;
+.container{
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 18px 16px 44px;
 }
-h1{ font-size: 28px; }
-h2{ font-size: 22px; }
-h3{ font-size: 16px; color: var(--muted); font-weight: 650; }
 
-.muted{ color: var(--muted); }
-
-/* =========================
-   Layout helpers
-   ========================= */
 .row{
   display:flex;
-  gap: 10px;
+  gap: var(--gap-2);
+  align-items:center;
   flex-wrap: wrap;
-  align-items: center;
 }
 
+.col{
+  display:flex;
+  flex-direction: column;
+  gap: var(--gap-2);
+}
+
+.spacer{ flex: 1; }
+
+.mt-6{ margin-top: 6px; }
 .mt-8{ margin-top: 8px; }
 .mt-10{ margin-top: 10px; }
 .mt-12{ margin-top: 12px; }
-.w-100{ width:100%; }
+.mt-16{ margin-top: 16px; }
+.mt-20{ margin-top: 20px; }
+.mt-24{ margin-top: 24px; }
 
-/* =========================
-   Card
-   ========================= */
-.card{
-  background: linear-gradient(180deg, var(--panel), rgba(255,255,255,0.04));
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  margin: 14px 0;
-  box-shadow: var(--shadow);
+.small{ font-size: var(--fs-1); }
+.muted{ color: var(--muted); }
+.muted2{ color: var(--muted2); }
+
+h1,h2,h3{
+  margin: 0 0 10px;
+  letter-spacing: 0.2px;
+}
+h1{ font-size: var(--fs-5); }
+h2{ font-size: var(--fs-4); }
+h3{ font-size: var(--fs-3); }
+
+/* Page titlebar */
+.page-titlebar{
+  display:flex;
+  justify-content: space-between;
+  align-items:flex-start;
+  gap: var(--gap-3);
+  flex-wrap: wrap;
 }
 
 /* =========================
-   Pills / KPI
+   3) Cards / sections
+   ========================= */
+.card{
+  background: linear-gradient(180deg, rgba(255,255,255,0.07), rgba(255,255,255,0.045));
+  border: 1px solid var(--border);
+  border-radius: var(--r-3);
+  box-shadow: var(--shadow-1);
+  padding: 16px;
+}
+
+.card + .card{ margin-top: 12px; }
+
+.card-head{
+  display:flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--gap-2);
+  flex-wrap: wrap;
+}
+
+/* =========================
+   4) Pills / badges / KPI
    ========================= */
 .pill{
   display:inline-flex;
   align-items:center;
-  gap:6px;
-  padding: 8px 10px;
-  border-radius: 14px;
+  gap: 8px;
+  padding: 6px 10px;
+  border-radius: 999px;
   border: 1px solid var(--border);
   background: rgba(255,255,255,0.04);
-  color: var(--muted);
-  line-height: 18px;
+  font-size: var(--fs-1);
+  font-weight: 750;
 }
-.pill strong{ color: var(--text); }
 
-.pill-ok{ border-color: rgba(49,208,170,0.45); background: rgba(49,208,170,0.10); }
-.pill-ko{ border-color: rgba(255,77,109,0.45); background: rgba(255,77,109,0.10); }
-.pill-warn{ border-color: rgba(255,176,32,0.45); background: rgba(255,176,32,0.10); }
+.pill-warn{
+  border-color: rgba(245,158,11,0.35);
+  background: rgba(245,158,11,0.15);
+  color: rgba(255,255,255,0.95);
+}
 
 .kpi{
   display:flex;
-  gap: 12px;
+  gap: 10px;
   flex-wrap: wrap;
 }
 
+/* Rayon badge (très visible) */
+.aisle-badge{
+  display:inline-flex;
+  align-items:center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(124,92,255,0.45);
+  background: rgba(124,92,255,0.16);
+  color: rgba(255,255,255,0.95);
+  font-weight: 850;
+  font-size: var(--fs-1);
+  letter-spacing: 0.15px;
+}
+
 /* =========================
-   Buttons (unified)
-   - Utilise class="btn btn-primary" etc.
-   - Fonctionne sur <a> et <button>
+   5) Buttons
    ========================= */
-.btn{
+.btn,
+.btn-primary,
+.btn-secondary,
+.btn-success,
+.btn-danger{
   display:inline-flex;
   align-items:center;
   justify-content:center;
-  gap:8px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.12);
-  background: rgba(255,255,255,0.06);
-  color: var(--text);
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: var(--r-2);
+  border: 1px solid transparent;
   cursor: pointer;
-  text-decoration: none;
-  font-weight: 700;
-}
-
-.btn:hover{
-  background: rgba(255,255,255,0.10);
-  text-decoration:none;
-}
-
-.btn:disabled{
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-/* Compat templates existants (si tu utilises encore btn-primary sans .btn) */
-.btn-primary, .btn-secondary, .btn-success, .btn-danger{
-  display:inline-flex;
-  align-items:center;
-  justify-content:center;
-  gap:8px;
-  padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid rgba(255,255,255,0.12);
-  cursor:pointer;
-  text-decoration:none;
-  font-weight:700;
+  font-weight: 860;
+  letter-spacing: 0.2px;
+  user-select:none;
+  transition: transform .06s ease, filter .12s ease, border-color .12s ease, background-color .12s ease;
+  white-space: nowrap;
 }
 
 .btn-primary{
-  background: linear-gradient(135deg, var(--brand), var(--brand-2));
-  border-color: transparent;
-  color: rgba(0,0,0,0.82);
+  background: linear-gradient(180deg, rgba(124,92,255,1), rgba(92,67,255,1));
+  border-color: rgba(124,92,255,0.55);
+  color: #fff;
+  box-shadow: 0 12px 24px rgba(124,92,255,0.22);
 }
-.btn-primary:hover{ filter: brightness(1.02); }
 
 .btn-secondary{
   background: rgba(255,255,255,0.06);
-  border-color: rgba(255,255,255,0.16);
+  border-color: var(--border2);
   color: var(--text);
 }
-.btn-secondary:hover{ background: rgba(255,255,255,0.10); }
 
 .btn-success{
-  background: rgba(49,208,170,0.14);
-  border-color: rgba(49,208,170,0.40);
-  color: var(--text);
+  background: rgba(34,197,94,0.18);
+  border-color: rgba(34,197,94,0.35);
+  color: rgba(255,255,255,0.95);
 }
-.btn-success:hover{ background: rgba(49,208,170,0.20); }
 
 .btn-danger{
-  background: rgba(255,77,109,0.14);
-  border-color: rgba(255,77,109,0.40);
-  color: var(--text);
+  background: rgba(239,68,68,0.18);
+  border-color: rgba(239,68,68,0.35);
+  color: rgba(255,255,255,0.95);
 }
-.btn-danger:hover{ background: rgba(255,77,109,0.20); }
 
-/* Liens “désactivés” si besoin */
-a.is-disabled{
-  pointer-events:none;
+.btn-primary:hover,
+.btn-secondary:hover,
+.btn-success:hover,
+.btn-danger:hover{
+  filter: brightness(1.08);
+}
+
+.btn-primary:active,
+.btn-secondary:active,
+.btn-success:active,
+.btn-danger:active{
+  transform: translateY(1px);
+}
+
+button:disabled,
+.btn-primary:disabled,
+.btn-secondary:disabled,
+.btn-success:disabled,
+.btn-danger:disabled{
   opacity: 0.55;
-  cursor:not-allowed;
+  cursor: not-allowed;
+  filter: saturate(0.8);
+}
+
+/* Focus accessibility */
+button:focus-visible,
+.btn-primary:focus-visible,
+.btn-secondary:focus-visible,
+.btn-success:focus-visible,
+.btn-danger:focus-visible{
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 /* =========================
-   Forms
+   6) Forms (inputs/select/textarea)
    ========================= */
-input, select, button{
+input,
+select,
+textarea{
   font: inherit;
   padding: 10px 12px;
-  border-radius: 14px;
-  border: 1px solid var(--border);
-  background: rgba(255,255,255,0.04);
+  border-radius: var(--r-2);
+  border: 1px solid var(--control-border);
+  background: var(--control-bg);
   color: var(--text);
   outline: none;
+  min-height: 40px;
 }
 
-input::placeholder{ color: rgba(255,255,255,0.35); }
-
-input:focus, select:focus{
-  border-color: rgba(124,92,255,0.65);
-  box-shadow: 0 0 0 4px rgba(124,92,255,0.18);
+input:hover,
+select:hover,
+textarea:hover{
+  background: var(--control-bg-hover);
 }
 
-/* Focus clavier plus propre */
-input:focus-visible,
-select:focus-visible,
-button:focus-visible,
-a:focus-visible{
-  outline: none;
-  border-color: rgba(124,92,255,0.65);
-  box-shadow: 0 0 0 4px rgba(124,92,255,0.18);
+input::placeholder,
+textarea::placeholder{
+  color: rgba(255,255,255,0.35);
+}
+
+input:focus,
+select:focus,
+textarea:focus{
+  border-color: var(--focus);
+  box-shadow: var(--focus-ring);
+}
+
+/* Labels mini (si tu utilises des <div class="muted small">) */
+.form-label{
+  color: var(--muted);
+  font-size: var(--fs-1);
+  margin-bottom: 6px;
 }
 
 /* =========================
-   Lists
+   7) Fix dropdown Windows/Chrome/Edge (options invisibles)
+   IMPORTANT: la popup <option> peut être claire par défaut.
    ========================= */
-.list{
-  list-style:none;
-  padding-left:0;
-  margin:0;
-}
-.list li{
-  padding: 10px 10px;
-  border-radius: 14px;
-  border: 1px solid transparent;
-}
-.list li:hover{
-  border-color: var(--border);
-  background: rgba(255,255,255,0.04);
+select{
+  color-scheme: dark; /* hints OS widgets */
 }
 
-/* ==========================================================================
-   Page — Shopping list detail (focus prix)
-   ========================================================================== */
-
-.page-titlebar{
-  display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:16px;
-  flex-wrap:wrap;
+/* Force style des options (la popup) */
+select option,
+select optgroup{
+  background-color: #0b0d12;
+  color: rgba(255,255,255,0.92);
 }
 
-.total-box{
-  text-align:right;
-  min-width:260px;
-}
-.total-box .label{
-  font-size:14px;
-  color: var(--muted);
-}
-.total-box .value{
-  font-size:28px;
-  font-weight:800;
-  letter-spacing:-0.02em;
-}
-.total-box .hint{
-  font-size:12px;
-  color: rgba(255,255,255,0.55);
-  margin-top:4px;
+/* =========================
+   8) Lists / tables / separators
+   ========================= */
+hr{
+  border: none;
+  border-top: 1px solid rgba(255,255,255,0.10);
+  margin: 12px 0;
 }
 
-.section-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  flex-wrap:wrap;
+.table{
+  width:100%;
+  border-collapse: collapse;
+}
+.table th,
+.table td{
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+  padding: 10px 8px;
+  text-align:left;
+}
+.table th{
+  color: rgba(255,255,255,0.82);
+  font-weight: 900;
 }
 
+/* =========================
+   9) Product cards (Catalogue & Shopping)
+   ========================= */
 .items-stack{
   display:flex;
-  flex-direction:column;
-  gap:10px;
+  flex-direction: column;
+  gap: 10px;
 }
 
+/* Carte produit : très lisible + repère couleur */
 .item-card{
-  border:1px solid rgba(255,255,255,.10);
-  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  border-radius: var(--r-2);
+  background: rgba(255,255,255,0.035);
   padding: 12px;
-  background: rgba(0,0,0,0.10);
-  transition: transform .08s ease, border-color .12s ease, box-shadow .12s ease, background .12s ease;
+  border-left: 6px solid rgba(124,92,255,0.65);
 }
-.item-card:hover{
-  border-color: rgba(255,255,255,.16);
-  background: rgba(255,255,255,0.03);
+
+/* Etat “à acheter / checked” */
+.item-card--checked{
+  border-color: rgba(34,197,94,0.35);
+  background: rgba(34,197,94,0.07);
+  border-left-color: rgba(34,197,94,0.85);
 }
 
 .item-card__inner{
   display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:12px;
-  flex-wrap:wrap;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
 }
 
-.item-main{
+/* Entête produit + badge rayon */
+.ref-head{
   display:flex;
-  gap:10px;
-  align-items:flex-start;
-  min-width:280px;
-  flex:1;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
 .item-title{
-  font-weight:800;
-  font-size:16px;
-}
-.item-meta{
-  margin-top:2px;
-  font-size:13px;
-  color: rgba(255,255,255,0.70);
-}
-.item-note{
-  margin-top:6px;
-  font-size:13px;
-  color: rgba(255,255,255,0.78);
+  font-weight: 950;
+  letter-spacing: 0.2px;
+  font-size: var(--fs-3);
 }
 
+.item-meta{
+  color: var(--muted);
+  font-size: var(--fs-2);
+}
+
+/* =========================
+   10) Price / total blocks (Shopping list)
+   ========================= */
 .price-box{
-  min-width:340px;
-  flex:0;
+  min-width: 260px;
 }
 .price-label{
-  font-size:13px;
-  color: rgba(255,255,255,0.70);
-  margin-bottom:6px;
+  color: var(--muted);
+  font-size: var(--fs-1);
+  margin-bottom: 6px;
 }
-.price-form{
-  display:flex;
-  gap:8px;
-  align-items:center;
-  justify-content:flex-end;
-  flex-wrap:wrap;
-  margin:0;
+.price-value{
+  font-weight: 950;
+}
+.price-empty{
+  color: var(--muted2);
 }
 .price-input{
-  width: 160px;
-  font-weight: 750;
-}
-.price-value{ opacity:.9; }
-.price-empty{ opacity:.6; }
-
-/* ✅ Emphase prix quand item est “Pris ✅” */
-.item-card--checked{
-  border-color: rgba(49,208,170,0.35);
-  background: rgba(49,208,170,0.06);
-}
-.item-card--checked .price-label{
-  color: rgba(49,208,170,0.85);
-}
-.item-card--checked .price-input{
-  border-color: rgba(49,208,170,0.55);
-  box-shadow: 0 0 0 4px rgba(49,208,170,0.14);
-}
-.item-card--checked:focus-within{
-  box-shadow: var(--shadow-soft), 0 0 0 1px rgba(49,208,170,0.25);
-  transform: translateY(-1px);
+  width: 140px;
 }
 
-/* ✅ Emphase cible autofocus */
-.price-input.is-focus-target{
-  outline: none;
-  border-color: rgba(255,176,32,0.65);
-  box-shadow: 0 0 0 4px rgba(255,176,32,0.18);
+.total-box{
+  min-width: 240px;
+  text-align: right;
+}
+.total-box .label{
+  color: var(--muted);
+  font-size: var(--fs-1);
+}
+.total-box .value{
+  font-size: 1.55rem;
+  font-weight: 980;
+  letter-spacing: 0.3px;
+}
+.total-box .hint{
+  color: var(--muted2);
+  font-size: var(--fs-1);
 }
 
-/* ==========================================================================
-   Page — Ticket (mode scan)
-   ========================================================================== */
-
-.receipt-head-grid{
-  display:grid;
-  grid-template-columns: 1.2fr 1fr 0.7fr 0.5fr;
-  gap:10px;
+/* =========================
+   11) Messages (Django messages)
+   Si tes templates affichent des messages, tu peux utiliser:
+   <div class="alert alert-success">...</div>
+   ========================= */
+.alert{
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  padding: 10px 12px;
+  border-radius: var(--r-2);
+  color: var(--text);
 }
 
-.receipt-summary{
+.alert-success{
+  border-color: rgba(34,197,94,0.35);
+  background: rgba(34,197,94,0.10);
+}
+
+.alert-danger{
+  border-color: rgba(239,68,68,0.35);
+  background: rgba(239,68,68,0.10);
+}
+
+.alert-warn{
+  border-color: rgba(245,158,11,0.35);
+  background: rgba(245,158,11,0.10);
+}
+
+/* =========================
+   12) Households / cards (si utilisées)
+   ========================= */
+.household-card{
   display:flex;
-  justify-content:space-between;
-  gap:12px;
-  flex-wrap:wrap;
   align-items:center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--r-3);
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.03);
 }
-
-.line-card{
-  border:1px solid rgba(255,255,255,.10);
-  border-radius: var(--radius-sm);
-  padding: 12px;
-  background: rgba(0,0,0,0.10);
-  transition: border-color .12s ease, background .12s ease;
+.household-title{
+  font-weight: 960;
+  font-size: var(--fs-3);
 }
-
-.line-card__inner{
+.household-actions{
   display:flex;
-  align-items:flex-start;
-  justify-content:space-between;
-  gap:12px;
-  flex-wrap:wrap;
+  gap: 10px;
+  flex-wrap: wrap;
 }
 
-.line-main{
-  min-width:260px;
-  flex:1;
+/* =========================
+   13) Micro-UX / Quality
+   ========================= */
+::selection{
+  background: rgba(124,92,255,0.35);
 }
 
-.line-title{
-  font-weight:800;
-}
-
-.line-action{
-  min-width:340px;
-  flex:0;
-}
-
-.line-form{
-  margin:0;
-  display:flex;
-  gap:8px;
-  align-items:center;
-  justify-content:flex-end;
-  flex-wrap:wrap;
-}
-
-.line-input{
-  width: 160px;
-  font-weight: 750;
-}
-
-/* Lignes manquantes : surbrillance orange */
-.line-card--missing{
-  border-color: rgba(255,176,32,0.35);
-  background: rgba(255,176,32,0.06);
-}
-.line-card--missing .line-input{
-  border-color: rgba(255,176,32,0.55);
-  box-shadow: 0 0 0 4px rgba(255,176,32,0.12);
-}
-
-/* Lignes saisies : léger vert */
-.line-card--done{
-  border-color: rgba(49,208,170,0.25);
-  background: rgba(49,208,170,0.04);
-}
-
-/* ==========================================================================
-   Responsive
-   ========================================================================== */
-
-@media (max-width: 900px){
-  .receipt-head-grid{ grid-template-columns: 1fr; }
-}
-
-@media (max-width: 720px){
-  .container{ padding: 14px 12px 40px; }
-
-  .page-titlebar{
-    align-items: stretch;
+/* Reduce motion support */
+@media (prefers-reduced-motion: reduce){
+  *{
+    scroll-behavior: auto !important;
+    transition: none !important;
   }
+}
 
-  .total-box{
-    text-align:left;
-    min-width: 0;
+/* =========================
+   14) Responsive (mobile)
+   ========================= */
+@media (max-width: 860px){
+  .container{ padding: 16px 12px 40px; }
+  .price-box{ min-width: 0; width: 100%; }
+  .total-box{ min-width: 0; width: 100%; text-align: left; }
+}
+
+@media (max-width: 560px){
+  h1{ font-size: 1.35rem; }
+  h2{ font-size: 1.15rem; }
+  .btn-primary,
+  .btn-secondary,
+  .btn-success,
+  .btn-danger{
     width: 100%;
+    justify-content: center;
   }
-
-  .item-main{
-    min-width: 0;
+  input, select, textarea{
     width: 100%;
-  }
-
-  .price-box{
-    min-width: 0;
-    width: 100%;
-  }
-
-  .line-main{
-    min-width: 0;
-    width: 100%;
-  }
-
-  .line-action{
-    min-width: 0;
-    width: 100%;
-  }
-
-  .price-form,
-  .line-form{
-    justify-content:flex-start;
   }
 }

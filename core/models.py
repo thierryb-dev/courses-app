@@ -1,39 +1,50 @@
-"""
-core/models.py
-
-Flux métier :
-- Catalogue (ReferenceItem) -> génération de la liste ouverte (ShoppingList + ListItem)
-- En rayons :
-    - on coche un item quand on le prend
-    - on saisit / modifie un prix estimé (poids => estimation puis ajustement)
-    - total estimé = somme des estimated_price des items cochés
-- Après caisse :
-    - on crée un ticket (Receipt) à partir des items cochés
-    - on saisit total ticket papier (paper_total)
-    - on saisit les prix réels par ligne (ReceiptItem.actual_price)
-    - contrôle : somme des lignes == total papier (tolérance)
-    - si OK => on clôture la liste (ShoppingList.closed_at)
-- Nouvelle session :
-    - une nouvelle liste ouverte est créée automatiquement
-"""
-
 from __future__ import annotations
 
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_UP
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
 User = settings.AUTH_USER_MODEL
 
+# =========================================================
+# Units
+# =========================================================
+UNIT_UNIT = "unit"
+UNIT_KG = "kg"
+UNIT_G = "g"
+UNIT_L = "l"
+UNIT_ML = "ml"
+UNIT_PACK = "pack"
 
+UNIT_CHOICES = [
+    (UNIT_UNIT, "Unité"),
+    (UNIT_KG, "Kg"),
+    (UNIT_G, "g"),
+    (UNIT_L, "L"),
+    (UNIT_ML, "mL"),
+    (UNIT_PACK, "Pack"),
+]
+
+
+def _format_decimal_human(d: Decimal) -> str:
+    s = format(d.normalize(), "f")
+    if "." in s:
+        s = s.rstrip("0").rstrip(".")
+    return s
+
+
+def _money_2(d: Decimal) -> Decimal:
+    # arrondi bancaire simple, 2 décimales
+    return d.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+# =========================================================
+# Core models
+# =========================================================
 class Household(models.Model):
     name = models.CharField(max_length=120)
-    created_by = models.ForeignKey(
-        User,
-        on_delete=models.PROTECT,
-        related_name="households_created",
-    )
+    created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="households_created")
     created_at = models.DateTimeField(default=timezone.now)
 
     def __str__(self) -> str:
@@ -63,33 +74,60 @@ class Membership(models.Model):
 
 class ReferenceItem(models.Model):
     """
-    Catalogue du foyer.
+    Catalogue du foyer — Rayons structurés.
     """
 
-    AISLE_GROCERY = "grocery"
-    AISLE_FRUITS_VEG = "fruits_veg"
-    AISLE_MEAT_FISH = "meat_fish"
-    AISLE_DAIRY = "dairy"
-    AISLE_FROZEN = "frozen"
-    AISLE_HOUSEHOLD = "household"
-    AISLE_OTHER = "other"
+    # 1) Alimentaire
+    AISLE_AL_FRUITS_VEG = "al_fruits_veg"
+    AISLE_AL_BAKERY = "al_bakery"
+    AISLE_AL_STAPLES = "al_staples"
+    AISLE_AL_DAIRY = "al_dairy"
+    AISLE_AL_MEAT = "al_meat"
+    AISLE_AL_FISH = "al_fish"
+    AISLE_AL_GROCERY = "al_grocery"
+    AISLE_AL_READY = "al_ready"
+    AISLE_AL_FROZEN = "al_frozen"
+
+    # 2) Boissons
+    AISLE_DR_SOFT = "dr_soft"
+    AISLE_DR_ALCOHOL = "dr_alcohol"
+
+    # 3) Hygiène & beauté
+    AISLE_HY_BODY = "hy_body"
+    AISLE_HY_DAILY = "hy_daily"
+    AISLE_HY_HAIR = "hy_hair"
+
+    # 4) Non alimentaire
+    AISLE_NF_PROMO = "nf_promo"
 
     AISLE_CHOICES = [
-        (AISLE_GROCERY, "Épicerie"),
-        (AISLE_FRUITS_VEG, "Fruits & légumes"),
-        (AISLE_MEAT_FISH, "Boucherie / Poissonnerie"),
-        (AISLE_DAIRY, "Crèmerie"),
-        (AISLE_FROZEN, "Surgelés"),
-        (AISLE_HOUSEHOLD, "Entretien"),
-        (AISLE_OTHER, "Autre"),
+        (AISLE_AL_FRUITS_VEG, "Alimentaire ▸ Fruits & légumes frais"),
+        (AISLE_AL_BAKERY, "Alimentaire ▸ Pains & viennoiseries"),
+        (AISLE_AL_STAPLES, "Alimentaire ▸ Œufs, pâtes, riz, conserves"),
+        (AISLE_AL_DAIRY, "Alimentaire ▸ Produits laitiers & fromages"),
+        (AISLE_AL_MEAT, "Alimentaire ▸ Viandes, charcuteries"),
+        (AISLE_AL_FISH, "Alimentaire ▸ Poissons & produits de la mer"),
+        (AISLE_AL_GROCERY, "Alimentaire ▸ Épicerie salée & sucrerie"),
+        (AISLE_AL_READY, "Alimentaire ▸ Plats préparés & frais réfrigérés"),
+        (AISLE_AL_FROZEN, "Alimentaire ▸ Produits surgelés"),
+        (AISLE_DR_SOFT, "Boissons ▸ Boissons non alcoolisées (eau, sodas, jus…)"),
+        (AISLE_DR_ALCOHOL, "Boissons ▸ Vins, bières, spiritueux"),
+        (AISLE_HY_BODY, "Hygiène & beauté ▸ Soins corporels"),
+        (AISLE_HY_DAILY, "Hygiène & beauté ▸ Hygiène quotidienne"),
+        (AISLE_HY_HAIR, "Hygiène & beauté ▸ Parfums et soins capillaires"),
+        (AISLE_NF_PROMO, "Non alimentaire ▸ Offres hebdomadaires / promotions"),
     ]
 
     household = models.ForeignKey(Household, on_delete=models.CASCADE, related_name="reference_items")
     name = models.CharField(max_length=140)
-    aisle = models.CharField(max_length=30, choices=AISLE_CHOICES, default=AISLE_GROCERY)
+    aisle = models.CharField(max_length=40, choices=AISLE_CHOICES, default=AISLE_AL_FRUITS_VEG)
 
-    default_quantity = models.CharField(max_length=60, blank=True, default="")
+    default_qty_value = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
+    default_unit = models.CharField(max_length=20, choices=UNIT_CHOICES, default=UNIT_UNIT)
     default_note = models.CharField(max_length=200, blank=True, default="")
+
+    # ✅ NEW: prix unitaire (dans l’unité choisie : €/kg, €/L, €/unité…)
+    default_unit_price = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
 
     is_active = models.BooleanField(default=True)
     is_selected = models.BooleanField(default=False)
@@ -101,13 +139,28 @@ class ReferenceItem(models.Model):
     def __str__(self) -> str:
         return self.name
 
+    @property
+    def unit_label(self) -> str:
+        return dict(UNIT_CHOICES).get(self.default_unit, self.default_unit)
+
+    @property
+    def quantity_label(self) -> str:
+        unit = self.unit_label
+        if self.default_qty_value is None:
+            return unit
+        return f"{_format_decimal_human(self.default_qty_value)} {unit}"
+
+    def compute_default_total(self) -> Decimal | None:
+        """
+        Total estimé (qté × prix unitaire) si possible.
+        """
+        if self.default_unit_price is None:
+            return None
+        qty = self.default_qty_value if self.default_qty_value is not None else Decimal("1")
+        return _money_2(qty * self.default_unit_price)
+
 
 class ShoppingList(models.Model):
-    """
-    Une session de courses = une ShoppingList.
-    Une liste est "ouverte" tant que closed_at est NULL.
-    Quand on valide le ticket, on clôture la liste.
-    """
     household = models.ForeignKey(Household, on_delete=models.CASCADE, related_name="shopping_lists")
     name = models.CharField(max_length=120, default="Liste magasin")
     created_at = models.DateTimeField(default=timezone.now)
@@ -121,29 +174,28 @@ class ShoppingList(models.Model):
     def is_open(self) -> bool:
         return self.closed_at is None
 
-    @property
-    def estimated_total(self) -> Decimal:
-        total = Decimal("0.00")
-        for it in self.items.filter(is_checked=True):
-            if it.estimated_price is not None:
-                total += it.estimated_price
-        return total
-
 
 class ListItem(models.Model):
     shopping_list = models.ForeignKey(ShoppingList, on_delete=models.CASCADE, related_name="items")
     name = models.CharField(max_length=140)
-    aisle = models.CharField(max_length=30, choices=ReferenceItem.AISLE_CHOICES, default=ReferenceItem.AISLE_GROCERY)
+    aisle = models.CharField(
+        max_length=40,
+        choices=ReferenceItem.AISLE_CHOICES,
+        default=ReferenceItem.AISLE_AL_FRUITS_VEG,
+    )
 
-    quantity = models.CharField(max_length=60, blank=True, default="")
+    qty_value = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
+    unit = models.CharField(max_length=20, choices=UNIT_CHOICES, default=UNIT_UNIT)
     note = models.CharField(max_length=200, blank=True, default="")
 
     is_checked = models.BooleanField(default=False)
     checked_at = models.DateTimeField(null=True, blank=True)
-    checked_by = models.ForeignKey(
-        User, null=True, blank=True, on_delete=models.SET_NULL, related_name="checked_list_items"
-    )
+    checked_by = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name="checked_list_items")
 
+    # ✅ NEW: prix unitaire estimé
+    unit_price = models.DecimalField(max_digits=10, decimal_places=3, null=True, blank=True)
+
+    # ✅ On conserve ce champ comme "prix total estimé" (compatibilité UI/Receipt)
     estimated_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
 
     created_by = models.ForeignKey(User, on_delete=models.PROTECT, related_name="list_items_created")
@@ -161,11 +213,32 @@ class ListItem(models.Model):
             self.checked_at = None
             self.checked_by = None
 
+    @property
+    def unit_label(self) -> str:
+        return dict(UNIT_CHOICES).get(self.unit, self.unit)
+
+    @property
+    def quantity_label(self) -> str:
+        unit = self.unit_label
+        if self.qty_value is None:
+            return unit
+        return f"{_format_decimal_human(self.qty_value)} {unit}"
+
+    def compute_total(self) -> Decimal | None:
+        if self.unit_price is None:
+            return None
+        qty = self.qty_value if self.qty_value is not None else Decimal("1")
+        return _money_2(qty * self.unit_price)
+
+    def recompute_estimated_price(self) -> None:
+        """
+        Synchronise estimated_price avec qty × unit_price.
+        """
+        total = self.compute_total()
+        self.estimated_price = total
+
 
 class Receipt(models.Model):
-    """
-    Ticket de caisse (dans l'app) : 1 ticket par ShoppingList.
-    """
     household = models.ForeignKey(Household, on_delete=models.CASCADE, related_name="receipts")
     shopping_list = models.OneToOneField(ShoppingList, on_delete=models.CASCADE, related_name="receipt")
 
@@ -180,29 +253,27 @@ class Receipt(models.Model):
 
     @property
     def estimated_total(self) -> Decimal:
-        total = Decimal("0.00")
+        s = Decimal("0.00")
         for it in self.items.all():
             if it.estimated_price is not None:
-                total += it.estimated_price
-        return total
+                s += it.estimated_price
+        return s
 
     @property
     def actual_total(self) -> Decimal:
-        total = Decimal("0.00")
+        s = Decimal("0.00")
         for it in self.items.all():
             if it.actual_price is not None:
-                total += it.actual_price
-        return total
+                s += it.actual_price
+        return s
 
     @property
     def missing_actual_count(self) -> int:
-        return self.items.filter(actual_price__isnull=True).count()
+        return sum(1 for it in self.items.all() if it.actual_price is None)
 
 
 class ReceiptItem(models.Model):
     receipt = models.ForeignKey(Receipt, on_delete=models.CASCADE, related_name="items")
-
-    # 1 ligne par ListItem (évite doublons)
     list_item = models.OneToOneField(ListItem, on_delete=models.CASCADE, related_name="receipt_line")
 
     position = models.PositiveIntegerField(default=1)
