@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
+from typing import Any
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -33,6 +34,56 @@ def _normalize_aisle(raw: str | None) -> str:
     if raw in aisle_map:
         return raw
     return ReferenceItem.AISLE_CHOICES[0][0]
+
+
+def _group_by_aisle(items) -> list[dict[str, Any]]:
+    """
+    Regroupe des ReferenceItem déjà triés par aisle.
+    Retourne une liste de groupes:
+      [
+        {
+          "aisle": "al_fruits_veg",
+          "label": "Alimentaire ▸ Fruits & légumes frais",
+          "items": [ReferenceItem, ...]
+        },
+        ...
+      ]
+    """
+    aisle_label_map = dict(ReferenceItem.AISLE_CHOICES)
+
+    grouped: list[dict[str, Any]] = []
+    current_aisle: str | None = None
+    current_bucket: list[ReferenceItem] = []
+
+    def _flush():
+        nonlocal current_aisle, current_bucket
+        if current_aisle is None:
+            return
+        grouped.append(
+            {
+                "aisle": current_aisle,
+                "label": aisle_label_map.get(current_aisle, current_aisle),
+                "items": current_bucket,
+            }
+        )
+        current_aisle = None
+        current_bucket = []
+
+    for it in items:
+        if current_aisle is None:
+            current_aisle = it.aisle
+            current_bucket = [it]
+            continue
+
+        if it.aisle != current_aisle:
+            _flush()
+            current_aisle = it.aisle
+            current_bucket = [it]
+        else:
+            current_bucket.append(it)
+
+    _flush()
+    return grouped
 
 
 @login_required
@@ -79,20 +130,33 @@ def reference_list(request, household_id: int):
 
         return redirect("reference_list", household_id=household.id)
 
+    # ⚙️ Base queryset: tri pour groupement stable par rayon
     items = ReferenceItem.objects.filter(household=household).order_by("is_active", "aisle", "name")
+
     active_count = items.filter(is_active=True).count()
     selected_count = items.filter(is_selected=True, is_active=True).count()
+
+    # ✅ Groupes prêts à afficher (par rayon)
+    active_items = items.filter(is_active=True).order_by("aisle", "name")
+    archived_items = items.filter(is_active=False).order_by("aisle", "name")
+
+    grouped_active = _group_by_aisle(active_items)
+    grouped_archived = _group_by_aisle(archived_items)
 
     return render(
         request,
         "core/reference_list.html",
         {
             "household": household,
+            # Compat: si ton template utilise encore "items"
             "items": items,
             "active_count": active_count,
             "selected_count": selected_count,
             "aisle_choices": ReferenceItem.AISLE_CHOICES,
             "unit_choices": UNIT_CHOICES,
+            # ✅ Nouveaux contextes pour affichage par rayon
+            "grouped_active": grouped_active,
+            "grouped_archived": grouped_archived,
         },
     )
 
